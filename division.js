@@ -158,6 +158,10 @@ $(function () {
         add_left_max: 12,
         add_right_min: 2,
         add_right_max: 12,
+        mul_left_min: 2,
+        mul_left_max: 12,
+        mul_right_min: 2,
+        mul_right_max: 12,
         duration: 120
     });
 });
