@@ -156,7 +156,7 @@ $(function () {
 });
 
 // Optional: Try Again button reloads the page
-//$(document).on('click', '#try-again', function (e) {
-//    e.preventDefault();
-//    window.location.reload();
+$(document).on('click', '#try-again', function (e) {
+    e.preventDefault();
+    window.location.reload();
 });
