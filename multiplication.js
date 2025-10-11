@@ -20,6 +20,7 @@ function init(options) {
     const randGens = {};
     genTypes.forEach(function (type) {
         randGens[type] = randGen(options[`${type}_min`], options[`${type}_max`]);
+    console.log("Options received:", options);
     });
     function pg_add() {
         const left = randGens[genTypes[0]]();
