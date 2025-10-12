@@ -25,6 +25,20 @@ input.answer {
   width: 60px;
   font-size: 1.5em;
   text-align: center;
+  padding: 0.5em;
+  border-radius: 8px;
+  border: 2px solid #00274C;  /* A solid border for definition */
+  background: #fff;
+  box-shadow: 3px 3px 12px #5558,  /* Main soft shadow */
+              0 1px 0 #fff inset;  /* Gentle highlight inside */
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+
+/* Optional: Add more pop when the box is focused */
+input.answer:focus {
+  box-shadow: 0 0 0 3px #FFCB0566, 3px 3px 12px #5558;
+  border-color: #FFCB05;
 }
 .left, .correct { margin-right: 1em; font-size: 1.2em; }
 .end { text-align: center; }
