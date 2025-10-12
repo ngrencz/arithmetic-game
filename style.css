@@ -8,19 +8,18 @@ body {
 }
 
 #game {
-  background: linear-gradient(135deg, #fff 75%, #e3f4fd 100%);
+  background: #fff;
   padding: 3em;
   max-width: 600px;
   width: 90vw;
   border-radius: 22px;
   margin: auto;
-  /* BIG, soft shadow with a little color for strong pop: */
+  /* Strong green shadow and border for pop */
   box-shadow:
-    0 12px 44px 0 #00000000,    /* blue glow for school colors */
-    0 1.5px 0 #fff8 inset,     /* little inner highlight */
-    0 0.8px 0 #fff6;           /* subtle inner edge highlight */
+    0 8px 32px 0 #05B25A88, /* deep underline green shadow */
+    0 1.5px 0 #fff8 inset;
+  border: 4px solid #05B25A; /* green border */
   font-size: 1.5em;
-  /* Optionally center everything inside for more polish: */
   display: flex;
   flex-direction: column;
   align-items: center;
