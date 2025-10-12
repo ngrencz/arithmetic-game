@@ -16,7 +16,7 @@ body {
   margin: auto;
   /* Strong green shadow and border for pop */
   box-shadow:
-    0 8px 32px 0 #05B25A88, /* deep underline green shadow */
+    0 8px 32px 0 #05B25AAA, /* deep underline green shadow */
     0 1.5px 0 #fff8 inset;
   border: 4px solid #05B25A; /* green border */
   font-size: 1.5em;
