@@ -39,15 +39,6 @@ input.answer {
   font-size: 1.5em;
   text-align: center;
   padding: 0.7em 0.3em;
-  border-radius: 15px;
-  border: 3px solid #000;      /* Thick, bold border */
-  background: linear-gradient(135deg, #fff 70%, #d9efdb 100%);
-  /* Pronounced deep shadow for a "raised" effect */
-  box-shadow:
-    0 6px 18px 2px #2229,      /* deep main shadow */
-    0 1.5px 0 #fff8 inset;     /* slight inner top highlight */
-  outline: none;
-  transition: box-shadow 0.2s, border-color 0.2s;
 }
 .left, .correct { margin-right: 1em; font-size: 1.2em; }
 .end { text-align: center; }
