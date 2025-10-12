@@ -5,6 +5,7 @@ body {
   min-height: 100vh;
   display: grid;
   place-items: center;
+}
 
 #game {
   background: linear-gradient(135deg, #fff 75%, #e3f4fd 100%);
