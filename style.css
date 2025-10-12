@@ -15,7 +15,7 @@ body {
   margin: auto;
   /* BIG, soft shadow with a little color for strong pop: */
   box-shadow:
-    0 8px 32px 0 #00274C44,    /* blue glow for school colors */
+    0 12px 44px 0 #00000000,    /* blue glow for school colors */
     0 1.5px 0 #fff8 inset,     /* little inner highlight */
     0 0.8px 0 #fff6;           /* subtle inner edge highlight */
   font-size: 1.5em;
