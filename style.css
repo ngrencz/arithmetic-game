@@ -14,11 +14,15 @@ body {
   width: 90vw;
   border-radius: 22px;
   margin: auto;
-  /* MUCH stronger visible shadow! */
+  border-radius: 15px;
+  border: 3px solid #000;      /* Thick, bold border */
+  background: linear-gradient(135deg, #fff 70%, #d9efdb 100%);
+  /* Pronounced deep shadow for a "raised" effect */
   box-shadow:
-    0 12px 64px 0 #05B25Aee,    /* bigger, darker, more vivid green */
-    0 2px 8px 0 #0008;          /* add a black layer for depth */
-  border: 4px solid #05B25A;
+    0 6px 18px 2px #2229,      /* deep main shadow */
+    0 1.5px 0 #fff8 inset;     /* slight inner top highlight */
+  outline: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
   font-size: 1.5em;
   display: flex;
   flex-direction: column;
