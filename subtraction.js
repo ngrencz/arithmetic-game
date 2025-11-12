@@ -1,3 +1,6 @@
+const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Get last name and hour from either URL params (preferred) or localStorage
 const params = new URLSearchParams(window.location.search);
 const lastname = params.get('lastname') || localStorage.getItem('mathgame_lastname') || "";
@@ -13,7 +16,18 @@ function getBestAndPoints() {
     let points = Number(localStorage.getItem(keyPoints)) || 0;
     return { bestScore, points };
 }
-
+async function submitScoreToSupabase(lastname, hour, gameType, score, points) {
+  const { data, error } = await supabase
+    .from('scores')
+    .insert([
+      { lastname, hour, game_type: gameType, score, points }
+    ]);
+  if (error) {
+    console.error(error.message);
+  } else {
+    console.log('Score submitted:', data);
+  }
+}
 $(function() {
     if (lastname) {
         // get initial best/points or show "0"
@@ -150,31 +164,25 @@ function init(options) {
             problemLog.push(thisProblemLog);
             answer.prop('disabled', true);
             const $doc = $(window.document);
-            const bsEat = function bsEat(e) {
-                return e.keyCode !== 8;
-            };
+            const bsEat = function bsEat(e) { return e.keyCode !== 8; };
             $doc.on('keydown', bsEat);
             clearInterval(timer);
-            $.post('/log', {
-            key: wls.match(/key=([0-9a-f]{8})/)?.[1],
-            problemLog: JSON.stringify(problemLog),
-        }, function () {
-            setTimeout(function () {
-                $doc.off('keydown', bsEat);
-            }, 1000);
+
+            setTimeout(function () { $doc.off('keydown', bsEat); }, 1000);
             banner.find('.start').hide();
             banner.find('.end').show();
 
-            // Display score, best, points!
+            // Calculate best/points, display to student
             const result = updateScoreAndPoints(correct_ct);
             let message = `Score: ${correct_ct}`;
-            if (result && result.beatBest) {
-                message += " (New best!)";
-            }
+            if (result && result.beatBest) { message += " (New best!)"; }
             message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
             message += `<br>Your points: ${result ? result.points : ""}`;
             banner.find('.correct').html(message);
-        }, 'html');
+
+            // --- Add this line to submit score to Supabase ---
+            submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
+            }, 'html');
         }
     }, 1000);
     if (wls.match(/\bpink\b/)) {
