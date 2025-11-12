@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Math Game Login</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    #login-box {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 8px 32px 0 #05B25A88;
+      padding: 2em;
+      max-width: 350px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 1.2em;
+    }
+    #login-box input, #login-box select {
+      font-size: 1.1em;
+      margin: 0.5em 0;
+      padding: 0.4em;
+      border-radius: 10px;
+      border: 2px solid #05B25A;
+      width: 80%;
+      box-shadow: 0 6px 16px #2221;
+    }
+    #login-box button {
+      font-size: 1.1em;
+      background: #05B25A;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.5em 2em;
+      margin-top: 1em;
+      cursor: pointer;
+    }
+    #login-error {
+      color: #c00;
+      margin: 0.5em 0;
+      font-size: 0.97em;
+      min-height: 1.2em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="login-box">
+    <h2 style="color: #05B25A;">Sign In</h2>
+    <input id="lastname" type="text" maxlength="20" placeholder="Last Name">
+    <select id="hour">
+      <option value="">Select Hour</option>
+      <option value="01">Hour 01</option>
+      <option value="02">Hour 02</option>
+      <option value="03">Hour 03</option>
+      <option value="04">Hour 04</option>
+      <option value="05">Hour 05</option>
+      <option value="06">Hour 06</option>
+      <option value="07">Hour 07</option>
+    </select>
+    <div id="login-error"></div>
+    <button id="login-btn">Log In</button>
+  </div>
+  <script>
+    function getGamePageForDay(dayNum) {
+      return [
+        "addition.html",
+        "subtraction.html",
+        "multiplication.html",
+        "division.html",
+        "exponentgame.html"
+      ][dayNum] || "addition.html";
+    }
+    document.getElementById("login-btn").onclick = function() {
+      var lastname = document.getElementById("lastname").value.trim();
+      var hour = document.getElementById("hour").value;
+      var errBox = document.getElementById("login-error");
+      errBox.textContent = '';
+      // Validate
+      if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
+        errBox.textContent = "Please enter your last name.";
+        return;
+      }
+      if (!/^0[1-7]$/.test(hour)) {
+        errBox.textContent = "Please select your hour (01-07).";
+        return;
+      }
+      // Determine day (0=Sun, 1=Mon, ... 5=Fri)
+      var today = new Date();
+      var dayNum = today.getDay() - 1; // 0=Mon, ..., 4=Fri, wrap-around for weekend
+      if (dayNum < 0 || dayNum > 4) dayNum = 0;
+      var gamePage = getGamePageForDay(dayNum);
+      // Store login locally for later score tracking
+      localStorage.setItem('mathgame_lastname', lastname);
+      localStorage.setItem('mathgame_hour', hour);
+
+      // Redirect with info (as query string in case you want to "see" it on game page too)
+      window.location.href = gamePage + "?lastname=" + encodeURIComponent(lastname)
+        + "&hour=" + hour;
+    };
+    // Enter key triggers login
+    document.getElementById("hour").addEventListener('keydown', function(e){
+      if(e.key === "Enter") document.getElementById("login-btn").click();
+    });
+    document.getElementById("lastname").addEventListener('keydown', function(e){
+      if(e.key === "Enter") document.getElementById("hour").focus();
+    });
+  </script>
+</body>
+</html>
