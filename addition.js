@@ -1,6 +1,18 @@
+// Get last name and hour from either URL params (preferred) or localStorage
+const params = new URLSearchParams(window.location.search);
+const lastname = params.get('lastname') || localStorage.getItem('mathgame_lastname') || "";
+const hour = params.get('hour') || localStorage.getItem('mathgame_hour') || "";
+const gameType = document.location.pathname.split('/').pop().replace('.html','');
 function rand(n) {
     return Math.floor(Math.random() * n);
 }
+$(function() {
+    // If there is a .left span for the timer, append player info to it
+    if (lastname) {
+        $('.left').append(` | ${lastname} (${hour})`);
+    }
+    // ...rest of your game setup code
+});
 function init(options) {
     let problemStartTime;
     const game = $('#game');
