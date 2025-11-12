@@ -6,12 +6,24 @@ const gameType = document.location.pathname.split('/').pop().replace('.html','')
 function rand(n) {
     return Math.floor(Math.random() * n);
 }
+function getBestAndPoints() {
+    const keyBest = `mathgame_${lastname}_${hour}_bestscore_${gameType}`;
+    const keyPoints = `mathgame_${lastname}_${hour}_points`;
+    let bestScore = Number(localStorage.getItem(keyBest)) || 0;
+    let points = Number(localStorage.getItem(keyPoints)) || 0;
+    return { bestScore, points };
+}
+
 $(function() {
-    // If there is a .left span for the timer, append player info to it
     if (lastname) {
-        $('.left').append(` | ${lastname} (${hour})`);
+        // get initial best/points or show "0"
+        const { bestScore, points } = getBestAndPoints();
+        $('.left').html(
+            `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
+            ` | Best: ${bestScore} | Points: ${points}`
+        );
     }
-    // ...rest of your game setup code
+    // ...rest of your game setup code (including init!)
 });
 
 function init(options) {
