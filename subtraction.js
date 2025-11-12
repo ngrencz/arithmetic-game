@@ -13,9 +13,7 @@ $(function() {
     }
     // ...rest of your game setup code
 });
-function rand(n) {
-    return Math.floor(Math.random() * n);
-}
+
 function init(options) {
     let problemStartTime;
     const game = $('#game');
@@ -146,15 +144,25 @@ function init(options) {
             $doc.on('keydown', bsEat);
             clearInterval(timer);
             $.post('/log', {
-                key: wls.match(/key=([0-9a-f]{8})/)?.[1],
-                problemLog: JSON.stringify(problemLog),
-            }, function () {
-                setTimeout(function () {
-                    return $doc.off('keydown', bsEat);
-                }, 1000);
-                banner.find('.start').hide();
-                return banner.find('.end').show();
-            }, 'html');
+            key: wls.match(/key=([0-9a-f]{8})/)?.[1],
+            problemLog: JSON.stringify(problemLog),
+        }, function () {
+            setTimeout(function () {
+                $doc.off('keydown', bsEat);
+            }, 1000);
+            banner.find('.start').hide();
+            banner.find('.end').show();
+
+            // Display score, best, points!
+            const result = updateScoreAndPoints(correct_ct);
+            let message = `Score: ${correct_ct}`;
+            if (result && result.beatBest) {
+                message += " (New best!)";
+            }
+            message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
+            message += `<br>Your points: ${result ? result.points : ""}`;
+            banner.find('.correct').html(message);
+        }, 'html');
         }
     }, 1000);
     if (wls.match(/\bpink\b/)) {
@@ -182,3 +190,21 @@ $(document).on('click', '#try-again', function(e) {
     e.preventDefault();
     window.location.reload();
 });
+
+// Assume you have player's score in `currentScore`
+function updateScoreAndPoints(currentScore) {
+    if (!lastname || !hour) return;
+    const keyBest = `mathgame_${lastname}_${hour}_bestscore_${gameType}`;
+    const keyPoints = `mathgame_${lastname}_${hour}_points`;
+
+    let bestScore = Number(localStorage.getItem(keyBest)) || 0;
+    let points = Number(localStorage.getItem(keyPoints)) || 0;
+    let beatBest = false;
+
+    if (currentScore > bestScore) {
+        localStorage.setItem(keyBest, currentScore);
+        localStorage.setItem(keyPoints, points + 1);
+        beatBest = true;
+    }
+    return { bestScore: Math.max(currentScore, bestScore), points: points + (beatBest ? 1 : 0), beatBest };
+}
