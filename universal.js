@@ -7,10 +7,15 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const params = new URLSearchParams(window.location.search);
 const lastname = params.get('lastname') || localStorage.getItem('mathgame_lastname') || "";
 const hour = params.get('hour') || localStorage.getItem('mathgame_hour') || "";
-// Get game type from query (?game=addition), or from filename
-const gameType = params.get("game") || document.location.pathname.split('/').pop().replace('.html','');
+// --- Determine the game type ---
+// Priority: query param "game", otherwise day-of-week logic
+let gameType =
+  params.get("game") ||
+  ["addition", "subtraction", "multiplication", "division", "exponents"][((new Date()).getDay()+6)%7 % 5]; // 0=Sun->Fri=4
 
-// --- Set game options based on type ---
+// You can further customize to handle days as needed (see below).
+
+// --- Game settings by type ---
 let options = {
     add: false, sub: false, mul: false, div: false,
     add_left_min: 2, add_left_max: 12, add_right_min: 2, add_right_max: 12,
