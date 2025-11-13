@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Speed Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game">
+    <span class="left">Seconds left: 0</span>
+    <span class="correct">Score: 0</span>
+    <div class="banner">
+      <div class="start">
+        <span class="problem">0 + 0</span> =
+        <input class="answer" autocomplete="off">
+      </div>
+      <div class="end" style="display: none;">
+        <p class="correct">Score: 0</p>
+        <p>
+          <a href="" id="try-again">Try again</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  <!-- Supabase loader - must come first -->
+  <script type="module">
+    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+    window.supabase = { createClient };
+  </script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <!-- Universal game logic -->
+  <script type="module" src="universal.js"></script>
+</body>
+</html>
