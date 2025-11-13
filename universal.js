@@ -176,7 +176,6 @@ function init(options) {
     problemGeng();
 
     const duration = options.duration || 120;
-    d_left.text('Seconds left: ' + duration);
     const timer = setInterval(function () {
         const d = duration - Math.floor((Date.now() - startTime) / 1000);
         $('.seconds').text(d);
