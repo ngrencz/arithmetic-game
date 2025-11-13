@@ -28,6 +28,7 @@ switch(gameType) {
     case "subtraction": options.sub = true; break;
     case "multiplication": options.mul = true; break;
     case "division": options.div = true; break;
+    case "exponents": options.exp = true; break; 
 }
 
 function rand(n) { return Math.floor(Math.random() * n); }
@@ -125,6 +126,40 @@ function init(options) {
             const left = first * second, right = first;
             return { prettyProblem: left + ' ÷ ' + right, plainProblem: left + ' / ' + right, answer: left / right };
         }
+      function exponentProblems() {
+    const problems = [];
+    for (let base = 1; base <= 12; base++) {
+        problems.push({base, exponent: 0});
+        problems.push({base, exponent: 1});
+        problems.push({base, exponent: 2});
+    }
+    for (let base = 1; base <= 3; base++) {
+        problems.push({base, exponent: 3});
+    }
+    for (let base = 1; base <= 2; base++) {
+        problems.push({base, exponent: 4});
+    }
+    problems.push({base: 1, exponent: 5});
+    return problems;
+    }
+    function powInt(base, exponent) {
+        let result = 1;
+        for(let i=0; i<exponent; i++) result *= base;
+        return result;
+    }
+    function formatSuperscript(n) {
+        const sup = {0:"⁰",1:"¹",2:"²",3:"³",4:"⁴",5:"⁵"};
+        return n.toString().split('').map(d=>sup[d]||d).join('');
+    }
+    function pg_exp() {
+        const probs = exponentProblems();
+        const pair = probs[rand(probs.length)];
+        return {
+            prettyProblem: pair.base + formatSuperscript(pair.exponent),
+            plainProblem: pair.base + "^" + pair.exponent,
+            answer: powInt(pair.base, pair.exponent)
+    };
+  }
     }
 
     const pgs = [];
@@ -132,6 +167,7 @@ function init(options) {
     if (options.sub) pgs.push(pg_sub);
     if (options.mul) pgs.push(pg_mul);
     if (options.div) pgs.push(pg_div);
+    if (options.exp) pgs.push(pg_exp);
 
     function problemGen() {
         let genned;
