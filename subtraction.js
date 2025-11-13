@@ -182,7 +182,6 @@ function init(options) {
 
             // --- Add this line to submit score to Supabase ---
             submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
-            }, 'html');
         }
     }, 1000);
     if (wls.match(/\bpink\b/)) {
