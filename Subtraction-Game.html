@@ -22,7 +22,10 @@
       </div>
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.5/dist/supabase.min.js"></script>
+  <script type="module">
+  import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+  window.supabase = { createClient };
+  </script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script type="module" src="subtraction.js"></script>
 </body>
