@@ -63,49 +63,44 @@
     <button id="login-btn">Log In</button>
   </div>
   <script>
-    function getGamePageForDay(dayNum) {
-      return [
-        "Addition-Game.html",
-        "Subtraction-Game.html",
-        "Multiplication-Game.html",
-        "Division-Game.html",
-        "Exponent-Game.html"
-      ][dayNum] || "addition.html";
+  document.getElementById("login-btn").onclick = function() {
+    var lastname = document.getElementById("lastname").value.trim();
+    var hour = document.getElementById("hour").value;
+    var errBox = document.getElementById("login-error");
+    errBox.textContent = '';
+    // Validate
+    if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
+      errBox.textContent = "Please enter your last name.";
+      return;
     }
-    document.getElementById("login-btn").onclick = function() {
-      var lastname = document.getElementById("lastname").value.trim();
-      var hour = document.getElementById("hour").value;
-      var errBox = document.getElementById("login-error");
-      errBox.textContent = '';
-      // Validate
-      if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
-        errBox.textContent = "Please enter your last name.";
-        return;
-      }
-      if (!/^0[1-7]$/.test(hour)) {
-        errBox.textContent = "Please select your hour (01-07).";
-        return;
-      }
-      // Determine day (0=Sun, 1=Mon, ... 5=Fri)
-      var today = new Date();
-      var dayNum = today.getDay() - 1; // 0=Mon, ..., 4=Fri, wrap-around for weekend
-      if (dayNum < 0 || dayNum > 4) dayNum = 0;
-      var gamePage = getGamePageForDay(dayNum);
-      // Store login locally for later score tracking
-      localStorage.setItem('mathgame_lastname', lastname);
-      localStorage.setItem('mathgame_hour', hour);
+    if (!/^0[1-7]$/.test(hour)) {
+      errBox.textContent = "Please select your hour (01-07).";
+      return;
+    }
+    // Set up game type by weekday (Monday to Friday)
+    var gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
+    var dayNum = (new Date()).getDay() - 1; // 0=Mon
+    if (dayNum < 0 || dayNum > 4) dayNum = 0;
+    var gameType = gameTypeArray[dayNum];
 
-      // Redirect with info (as query string in case you want to "see" it on game page too)
-      window.location.href = gamePage + "?lastname=" + encodeURIComponent(lastname)
-        + "&hour=" + hour;
-    };
-    // Enter key triggers login
-    document.getElementById("hour").addEventListener('keydown', function(e){
-      if(e.key === "Enter") document.getElementById("login-btn").click();
-    });
-    document.getElementById("lastname").addEventListener('keydown', function(e){
-      if(e.key === "Enter") document.getElementById("hour").focus();
-    });
-  </script>
+    // Save for page reload/local use
+    localStorage.setItem('mathgame_lastname', lastname);
+    localStorage.setItem('mathgame_hour', hour);
+
+    // Go to universal game, passing all data
+    window.location.href = "index.html?lastname=" + encodeURIComponent(lastname)
+      + "&hour=" + hour
+      + "&game=" + gameType;
+  };
+
+  // Enter key triggers login
+  document.getElementById("hour").addEventListener('keydown', function(e){
+    if(e.key === "Enter") document.getElementById("login-btn").click();
+  });
+  document.getElementById("lastname").addEventListener('keydown', function(e){
+    if(e.key === "Enter") document.getElementById("hour").focus();
+  });
+</script>
+
 </body>
 </html>
