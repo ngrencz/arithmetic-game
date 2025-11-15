@@ -5,8 +5,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const lastname = localStorage.getItem('mathgame_lastname');
 const hour = localStorage.getItem('mathgame_hour');
-const gameTypes = ["addition","subtraction","multiplication","division","exponents"];
-const scopeTypes = ["class","overall"];
+
+const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents"];
+const scopeTypes = ["class", "overall"];
 
 function showUserInfo() {
   let info = `<h2>Welcome ${lastname} (Hour ${hour})</h2>`;
@@ -20,13 +21,11 @@ function showUserInfo() {
   document.getElementById('user-info').innerHTML = info;
 }
 
-// Aggregates to keep best score + points per student
 function aggregateLeaderboard(data) {
   // Keys: lastname + hour
   const users = {};
   data.forEach(row => {
     const key = row.lastname + "/" + row.hour;
-    // Only keep entry if it's a higher score
     if (!users[key] || row.score > users[key].score) {
       users[key] = {
         lastname: row.lastname,
@@ -36,7 +35,7 @@ function aggregateLeaderboard(data) {
       };
     }
   });
-  // Sorting by points descending
+  // Sort by points descending
   return Object.values(users).sort((a, b) => b.points - a.points);
 }
 
@@ -51,10 +50,9 @@ async function getLeaderboard(gameType, scope) {
   if (error) return `<p>Error: ${error.message}</p>`;
   if (!data || !data.length) return `<p>No scores yet!</p>`;
 
-  // Aggregate best scores per user
   const agg = aggregateLeaderboard(data);
   let rows = agg.map(row =>
-    `<tr${row.lastname==lastname&&row.hour==hour ? ' style="background:#05B25A22"' : ''}>
+    `<tr${row.lastname == lastname && row.hour == hour ? ' style="background:#05B25A22"' : ''}>
       <td>${row.lastname}</td>
       <td>${row.hour}</td>
       <td>${row.score}</td>
@@ -67,9 +65,30 @@ async function getLeaderboard(gameType, scope) {
   </table>`;
 }
 
-// Menu and render logic omitted for brevity, matches previous example:
-function buildMenuBar(selectedGame, selectedScope) { /* ... */ }
-async function renderLeaderboard(gameType, scope) { /* ... */ }
+// MENU BAR CODE:
+function buildMenuBar(selectedGame, selectedScope) {
+  const menuBar = document.getElementById('menu-bar');
+  menuBar.innerHTML = '';
+  for (const g of gameTypes) {
+    for (const s of scopeTypes) {
+      const active = (g === selectedGame && s === selectedScope) ? 'active' : '';
+      const btn = document.createElement('button');
+      btn.className = active;
+      btn.textContent = `${g[0].toUpperCase() + g.slice(1)} (${s})`;
+      btn.onclick = () => renderLeaderboard(g, s);
+      menuBar.appendChild(btn);
+    }
+  }
+}
+
+// ASYNC RENDER AND DOM UPDATE
+async function renderLeaderboard(gameType, scope) {
+  buildMenuBar(gameType, scope);
+  // Loading spinner/text:
+  document.getElementById('leaderboard-content').innerHTML = "Loading...";
+  const html = await getLeaderboard(gameType, scope);
+  document.getElementById('leaderboard-content').innerHTML = html;
+}
 
 showUserInfo();
-renderLeaderboard('addition', 'class');
+renderLeaderboard('addition', 'class'); // <-- SHOW DEFAULT ON PAGE LOAD
