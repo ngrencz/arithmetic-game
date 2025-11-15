@@ -54,7 +54,7 @@ body {
   border-bottom: 1px solid #eee;
   padding-bottom: 0.4em;
 }
-.menu-bar button, .submenu-bar button {
+.menu-bar button {
   border: none;
   border-radius: 8px;
   padding: 0.5em 1.2em;
