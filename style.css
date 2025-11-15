@@ -35,6 +35,7 @@ body {
   box-shadow: 0 8px 24px #05B25A33;
   margin-top: 2em;
   max-width: 1000px;
+  width:100%;
   margin-left: auto;
   margin-right: auto;
   /* Ensure child items don't overflow visually */
