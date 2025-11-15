@@ -63,7 +63,6 @@ body {
   white-space: nowrap;
   color: #fff;
   background: #05B25A; /* Vibrant green */
-  font-weight: bold;
   transition: background 0.2s, outline 0.2s;
 }
 
