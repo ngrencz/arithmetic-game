@@ -44,12 +44,16 @@ body {
 }
 
 .menu-bar, .submenu-bar {
-  width: 100%;       /* full width inside the box */
+  width: 100%;
   justify-content: center;
-  margin-bottom: 0.7em;
-  margin-top: 0;     /* no extra space above menu */
-  box-sizing: border-box;
+  margin: 0 0 0.7em 0;
+  border-bottom: 1px solid #eee;
+  padding: 0.6em 0;
+  background: #f7fff7;
+  border-radius: 8px;
+  /* box-shadow: 0 2px 8px #05b25a0c; (optional) */
 }
+
 
 /* Optionally, give them a faint separator: */
 .menu-bar, .submenu-bar {
