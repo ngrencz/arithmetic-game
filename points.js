@@ -5,7 +5,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const lastname = localStorage.getItem('mathgame_lastname');
 const hour = localStorage.getItem('mathgame_hour');
-
 const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents"];
 const scopeTypes = ["class", "overall"];
 
@@ -22,7 +21,6 @@ function showUserInfo() {
 }
 
 function aggregateLeaderboard(data) {
-  // Keys: lastname + hour
   const users = {};
   data.forEach(row => {
     const key = row.lastname + "/" + row.hour;
@@ -35,7 +33,6 @@ function aggregateLeaderboard(data) {
       };
     }
   });
-  // Sort by points descending
   return Object.values(users).sort((a, b) => b.points - a.points);
 }
 
@@ -65,30 +62,47 @@ async function getLeaderboard(gameType, scope) {
   </table>`;
 }
 
-// MENU BAR CODE:
-function buildMenuBar(selectedGame, selectedScope) {
+// LEVEL ONE: Show operations menu
+function buildOperationMenu(selectedGame) {
   const menuBar = document.getElementById('menu-bar');
   menuBar.innerHTML = '';
   for (const g of gameTypes) {
-    for (const s of scopeTypes) {
-      const active = (g === selectedGame && s === selectedScope) ? 'active' : '';
-      const btn = document.createElement('button');
-      btn.className = active;
-      btn.textContent = `${g[0].toUpperCase() + g.slice(1)} (${s})`;
-      btn.onclick = () => renderLeaderboard(g, s);
-      menuBar.appendChild(btn);
-    }
+    const btn = document.createElement('button');
+    btn.className = (g === selectedGame ? 'active' : '');
+    btn.textContent = g[0].toUpperCase() + g.slice(1);
+    btn.onclick = () => {
+      buildScopeMenu(g, "class"); // Default to "class" when changing op
+      renderLeaderboard(g, "class");
+    };
+    menuBar.appendChild(btn);
   }
 }
 
-// ASYNC RENDER AND DOM UPDATE
+// LEVEL TWO: Show scope menu after op clicked
+function buildScopeMenu(gameType, selectedScope) {
+  const submenuBar = document.getElementById('submenu-bar');
+  submenuBar.innerHTML = '';
+  for (const s of scopeTypes) {
+    const btn = document.createElement('button');
+    btn.className = (s === selectedScope ? 'active' : '');
+    btn.textContent = (s === "class" ? `Class Hour (${hour})` : 'Overall');
+    btn.onclick = () => {
+      buildScopeMenu(gameType, s); // To update active state
+      renderLeaderboard(gameType, s);
+    };
+    submenuBar.appendChild(btn);
+  }
+}
+
+// RENDER
 async function renderLeaderboard(gameType, scope) {
-  buildMenuBar(gameType, scope);
-  // Loading spinner/text:
+  buildOperationMenu(gameType);
+  buildScopeMenu(gameType, scope);
   document.getElementById('leaderboard-content').innerHTML = "Loading...";
   const html = await getLeaderboard(gameType, scope);
   document.getElementById('leaderboard-content').innerHTML = html;
 }
 
+// INIT
 showUserInfo();
-renderLeaderboard('addition', 'class'); // <-- SHOW DEFAULT ON PAGE LOAD
+renderLeaderboard('addition', 'class');
