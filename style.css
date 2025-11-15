@@ -33,7 +33,7 @@ body {
   border-radius: 14px;
   box-shadow: 0 8px 24px #05B25A33;
   margin-top: 2em;
-  width:100%;
+  width:90vw;
   margin-left: auto;
   margin-right: auto;
   /* Ensure child items don't overflow visually */
