@@ -62,12 +62,12 @@ body {
   cursor: pointer;
   white-space: nowrap;
   color: #fff;
-  background: #05B25A; /* Vibrant green */
+  background: #03793A; 
   transition: background 0.2s, outline 0.2s;
 }
 
 .menu-bar button.active {
-  background: #03793A;   /* Darker green for active */
+  background: #05B25A;   
   outline: 2px solid #03A850;
   color: #000;
 }
