@@ -2,6 +2,9 @@ body {
   font-family: "Aptos", "Calibri", "Segoe UI", "Arial", "Helvetica Neue", Helvetica, sans-serif;
   background: #05B25A;
   margin: 0;
+  display: flex;
+  justify-content: center;   /* Horizontal centering */
+  align-items: center;       /* Vertical centering */
   min-height: 100vh;
   
 }
