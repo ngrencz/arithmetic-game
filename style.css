@@ -41,7 +41,7 @@ body {
   align-items: stretch;
 }
 
-.menu-bar, .submenu-bar {
+.menu-bar {
   justify-content: center;
   align-items:center;
   text-align: center;
@@ -66,7 +66,7 @@ body {
   transition: background 0.2s, outline 0.2s;
 }
 
-.menu-bar button.active, .submenu-bar button.active {
+.menu-bar button.active {
   background: #03793A;   /* Darker green for active */
   outline: 2px solid #03A850;
   color: #000;
