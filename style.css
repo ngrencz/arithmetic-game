@@ -69,6 +69,7 @@ body {
 .menu-bar button.active, .submenu-bar button.active {
   background: #03793A;   /* Darker green for active */
   outline: 2px solid #03A850;
+  color: #000;
 }
 
 
