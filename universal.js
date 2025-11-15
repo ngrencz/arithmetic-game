@@ -233,6 +233,10 @@ function init(options) {
 
             // Submit to Supabase
             submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
+          // Redirect after a short delay (e.g. 2 seconds so user can see message)
+    setTimeout(function() {
+        window.location.href = 'points.html';
+    }, 2000);
         }
     }, 1000);
 }
