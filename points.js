@@ -38,7 +38,7 @@ function aggregateLeaderboard(data) {
 
 async function getLeaderboard(gameType, scope) {
   let qb = supabase.from('scores')
-    .select('lastname, hour, score, points, game_type')
+    .select('lastname, hour, score, game_type')
     .eq('game_type', gameType);
 
   if (scope === "class") qb = qb.eq('hour', hour);
@@ -47,17 +47,31 @@ async function getLeaderboard(gameType, scope) {
   if (error) return `<p>Error: ${error.message}</p>`;
   if (!data || !data.length) return `<p>No scores yet!</p>`;
 
-  const agg = aggregateLeaderboard(data);
+  // Aggregate so only each student's best score in this gameType/hour is considered
+  const users = {};
+  data.forEach(row => {
+    const key = row.lastname + "/" + row.hour;
+    if (!users[key] || row.score > users[key].score) {
+      users[key] = {
+        lastname: row.lastname,
+        hour: row.hour,
+        score: row.score
+      };
+    }
+  });
+  // Sort by score descending
+  const agg = Object.values(users).sort((a, b) => b.score - a.score);
+
   let rows = agg.map(row =>
     `<tr${row.lastname == lastname && row.hour == hour ? ' style="background:#05B25A22"' : ''}>
       <td>${row.lastname}</td>
       <td>${row.hour}</td>
       <td>${row.score}</td>
-      <td>${row.points}</td>
     </tr>`
   ).join('');
+
   return `<table>
-    <tr><th>Last Name</th><th>Hour</th><th>Best Score</th><th>Points</th></tr>
+    <tr><th>Last Name</th><th>Hour</th><th>Best Score</th></tr>
     ${rows}
   </table>`;
 }
