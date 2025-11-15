@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
 const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-const SUPABASE_KEY = "YOUR-SUPABASE-KEY";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const lastname = localStorage.getItem('mathgame_lastname');
