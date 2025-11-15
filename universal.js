@@ -126,7 +126,8 @@ function init(options) {
             const left = first * second, right = first;
             return { prettyProblem: left + ' ÷ ' + right, plainProblem: left + ' / ' + right, answer: left / right };
         }
-      function exponentProblems() {
+    }
+    function exponentProblems() {
     const problems = [];
     for (let base = 1; base <= 12; base++) {
         problems.push({base, exponent: 0});
@@ -160,8 +161,6 @@ function init(options) {
             answer: powInt(pair.base, pair.exponent)
     };
   }
-    }
-
     const pgs = [];
     if (options.add) pgs.push(pg_add);
     if (options.sub) pgs.push(pg_sub);
