@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <title>Grencz's Grinch Points Math Game Login</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* ... your login-box styles ... */
+  </style>
 </head>
 <body>
   <div id="login-box">
@@ -22,45 +25,68 @@
     <div id="login-error"></div>
     <button id="login-btn">Log In</button>
   </div>
-  <script>
-  document.getElementById("login-btn").onclick = function() {
-    var lastname = document.getElementById("lastname").value.trim();
-    var hour = document.getElementById("hour").value;
-    var errBox = document.getElementById("login-error");
-    errBox.textContent = '';
-    // Validate
-    if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
-      errBox.textContent = "Please enter your last name.";
-      return;
-    }
-    if (!/^0[1-7]$/.test(hour)) {
-      errBox.textContent = "Please select your hour (01-07).";
-      return;
-    }
-    // Set up game type by weekday (Monday to Friday)
-    var gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
-    var dayNum = (new Date()).getDay() - 1; // 0=Mon
-    if (dayNum < 0 || dayNum > 4) dayNum = 0;
-    var gameType = gameTypeArray[dayNum];
 
-    // Save for page reload/local use
-    localStorage.setItem('mathgame_lastname', lastname);
-    localStorage.setItem('mathgame_hour', hour);
+  <!-- Only ONE module script! -->
+  <script type="module">
+    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Go to universal game, passing all data
-    window.location.href = "index_new.html?lastname=" + encodeURIComponent(lastname)
-      + "&hour=" + hour
-      + "&game=" + gameType;
-  };
+    document.getElementById("login-btn").onclick = async function() {
+      var lastname = document.getElementById("lastname").value.trim();
+      var hour = document.getElementById("hour").value;
+      var errBox = document.getElementById("login-error");
+      errBox.textContent = '';
 
-  // Enter key triggers login
-  document.getElementById("hour").addEventListener('keydown', function(e){
-    if(e.key === "Enter") document.getElementById("login-btn").click();
-  });
-  document.getElementById("lastname").addEventListener('keydown', function(e){
-    if(e.key === "Enter") document.getElementById("hour").focus();
-  });
-</script>
+      // Validate
+      if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
+        errBox.textContent = "Please enter your last name.";
+        return;
+      }
+      if (!/^0[1-7]$/.test(hour)) {
+        errBox.textContent = "Please select your hour (01-07).";
+        return;
+      }
+
+      // Supabase: check if name exists
+      const { data, error } = await supabase
+        .from('scores')
+        .select('id')
+        .ilike('lastname', lastname); // Case-insensitive
+
+      if (error) {
+        errBox.textContent = "Cannot check name right now. Try again later.";
+        console.error(error);
+        return;
+      }
+      if (!data || data.length === 0) {
+        errBox.textContent = "Name not found. Please check your spelling or ask your teacher.";
+        return;
+      }
+
+      // Game setup
+      var gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
+      var dayNum = (new Date()).getDay() - 1; // 0=Mon
+      if (dayNum < 0 || dayNum > 4) dayNum = 0;
+      var gameType = gameTypeArray[dayNum];
+
+      localStorage.setItem('mathgame_lastname', lastname);
+      localStorage.setItem('mathgame_hour', hour);
+
+      window.location.href = "index_new.html?lastname=" + encodeURIComponent(lastname)
+          + "&hour=" + hour
+          + "&game=" + gameType;
+    };
+
+    // Enter key triggers login
+    document.getElementById("hour").addEventListener('keydown', function(e){
+      if(e.key === "Enter") document.getElementById("login-btn").click();
+    });
+    document.getElementById("lastname").addEventListener('keydown', function(e){
+      if(e.key === "Enter") document.getElementById("hour").focus();
+    });
+  </script>
 
 </body>
 </html>
