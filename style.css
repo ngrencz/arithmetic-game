@@ -5,7 +5,49 @@ body {
   min-height: 100vh;
   
 }
+#login-box {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px 0 #05B25A88;
+  padding: 2em;
+  max-width: 350px;
+  width: 90vw;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.2em;
+}
 
+#login-box input,
+#login-box select {
+  font-size: 1.1em;
+  margin: 0.5em 0;
+  padding: 0.4em;
+  border-radius: 10px;
+  border: 2px solid #05B25A;
+  width: 80%;
+  box-shadow: 0 6px 16px #2221;
+}
+
+#login-box button {
+  font-size: 1.1em;
+  background: #05B25A;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.5em 2em;
+  margin-top: 1em;
+  cursor: pointer;
+}
+
+#login-error {
+  color: #c00;
+  margin: 0.5em 0;
+  font-size: 0.97em;
+  min-height: 1.2em;
+  text-align: center;
+}
 #game {
   background: #fff;
   padding: 3em;
