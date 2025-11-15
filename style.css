@@ -46,6 +46,7 @@ body {
 
 .menu-bar, .submenu-bar {
   justify-content: center;
+  align-items:center;
   margin: 0 0 0.7em 0;
   border-bottom: 1px solid #eee;
   padding: 0.6em 0;
