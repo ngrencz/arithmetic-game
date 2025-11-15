@@ -96,13 +96,13 @@ function init(options) {
     function randGen(min, max) {
         return function () { return min + rand(max - min + 1); };
     }
-    const genTypes = ['add_left', 'add_right', 'mul_left', 'mul_right'];
     const randGens = {};
     randGens.add_left = randGen(options['add_left_min'], options['add_left_max']);
     randGens.add_right = randGen(options['add_right_min'], options['add_right_max']);
     randGens.mul_left = randGen(options['mul_left_min'], options['mul_left_max'] || 2);
     randGens.mul_right = randGen(options['mul_right_min'], options['mul_right_max'] || 2);
 
+    // --- Problem Generators ---
     function pg_add() {
         const left = randGens.add_left();
         const right = randGens.add_right();
@@ -128,20 +128,20 @@ function init(options) {
         }
     }
     function exponentProblems() {
-    const problems = [];
-    for (let base = 1; base <= 12; base++) {
-        problems.push({base, exponent: 0});
-        problems.push({base, exponent: 1});
-        problems.push({base, exponent: 2});
-    }
-    for (let base = 1; base <= 3; base++) {
-        problems.push({base, exponent: 3});
-    }
-    for (let base = 1; base <= 2; base++) {
-        problems.push({base, exponent: 4});
-    }
-    problems.push({base: 1, exponent: 5});
-    return problems;
+        const problems = [];
+        for (let base = 1; base <= 12; base++) {
+            problems.push({base, exponent: 0});
+            problems.push({base, exponent: 1});
+            problems.push({base, exponent: 2});
+        }
+        for (let base = 1; base <= 3; base++) {
+            problems.push({base, exponent: 3});
+        }
+        for (let base = 1; base <= 2; base++) {
+            problems.push({base, exponent: 4});
+        }
+        problems.push({base: 1, exponent: 5});
+        return problems;
     }
     function powInt(base, exponent) {
         let result = 1;
@@ -159,8 +159,10 @@ function init(options) {
             prettyProblem: pair.base + formatSuperscript(pair.exponent),
             plainProblem: pair.base + "^" + pair.exponent,
             answer: powInt(pair.base, pair.exponent)
-    };
-  }
+        };
+    }
+
+    // --- Array of enabled problem generators ---
     const pgs = [];
     if (options.add) pgs.push(pg_add);
     if (options.sub) pgs.push(pg_sub);
