@@ -52,16 +52,20 @@ body {
   font-size: 1em;
   background: #f7fff7;
   border-radius: 8px;
-  /* box-shadow: 0 2px 8px #05b25a0c; (optional) */
-}
-
-
-/* Optionally, give them a faint separator: */
-.menu-bar, .submenu-bar {
   border-bottom: 1px solid #eee;
   padding-bottom: 0.4em;
 }
-/* Add this for larger problem numbers: */
+.menu-bar button, .submenu-bar button {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.menu-bar button, .submenu-bar button {
+  /* If you want stretching: */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .problem {
   font-size: 1.5em;
   margin: 0 0.3em;
