@@ -55,15 +55,23 @@ body {
   padding-bottom: 0.4em;
 }
 .menu-bar button, .submenu-bar button {
-  flex: 0 0 auto;
-  min-width: 0;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5em 1.2em;
+  font-size: 1em;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #fff;
+  background: #05B25A; /* Vibrant green */
+  font-weight: bold;
+  transition: background 0.2s, outline 0.2s;
 }
 
-.menu-bar button, .submenu-bar button {
-  /* If you want stretching: */
-  flex: 1 1 auto;
-  min-width: 0;
+.menu-bar button.active, .submenu-bar button.active {
+  background: #03793A;   /* Darker green for active */
+  outline: 2px solid #03A850;
 }
+
 
 .problem {
   font-size: 1.5em;
