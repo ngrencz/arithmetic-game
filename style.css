@@ -10,7 +10,6 @@ body {
 #game {
   background: #fff;
   padding: 3em;
-  max-width: 600px;
   width: 90vw;
   border-radius: 22px;
   margin: auto;
@@ -34,7 +33,6 @@ body {
   border-radius: 14px;
   box-shadow: 0 8px 24px #05B25A33;
   margin-top: 2em;
-  max-width: 1000px;
   width:100%;
   margin-left: auto;
   margin-right: auto;
