@@ -47,6 +47,7 @@ body {
 .menu-bar, .submenu-bar {
   justify-content: center;
   align-items:center;
+  text-align: center;
   margin: 0 0 0.7em 0;
   border-bottom: 1px solid #eee;
   padding: 0.6em 0;
@@ -57,7 +58,7 @@ body {
   padding-bottom: 0.4em;
 }
 .menu-bar button, .submenu-bar button {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
 }
 
