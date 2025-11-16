@@ -141,7 +141,18 @@ body {
   outline: 2px solid #03A850;
   color: #000;
 }
-
+#redeem-box {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px #05B25A22;
+  width: 90vw;
+  max-width: 600px;
+  margin: 2em auto;
+  padding: 1.3em 1em;
+  text-align: center;
+  font-size: 1.16em;
+}
+#redeem-box h3 { margin-top: 0; }
 
 .problem {
   font-size: 1.5em;
