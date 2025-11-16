@@ -28,6 +28,9 @@ body {
 #user-info li {
   text-align: left;
 }
+#user-info h2 {
+    text-align: center;
+}
 #login-box {
   background: #fff;
   border-radius: 22px;
