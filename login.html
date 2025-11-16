@@ -4,9 +4,23 @@
   <meta charset="UTF-8">
   <title>Grencz's Grinch Points Math Game Login</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    /* ... your login-box styles ... */
-  </style>
+  <script type="module">
+    // AUTO-LOGIN BYPASS LOGIC -- runs instantly
+    const storedName = localStorage.getItem('mathgame_lastname');
+    const storedHour = localStorage.getItem('mathgame_hour');
+
+    if (storedName && storedHour) {
+      const gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
+      let dayNum = (new Date()).getDay() - 1;
+      if (dayNum < 0 || dayNum > 4) dayNum = 0;
+      let gameType = gameTypeArray[dayNum];
+      window.location.href = "index_new.html?lastname=" + encodeURIComponent(storedName)
+          + "&hour=" + storedHour
+          + "&game=" + gameType;
+      // The redirect happens right away, so page UI won't display.
+    }
+    // Your other login code goes here, after this block
+  </script>
 </head>
 <body>
   <div id="login-box">
