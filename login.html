@@ -19,7 +19,28 @@
           + "&game=" + gameType;
       // The redirect happens right away, so page UI won't display.
     }
-    // Your other login code goes here, after this block
+    const storedName = localStorage.getItem('mathgame_lastname');
+    const storedHour = localStorage.getItem('mathgame_hour');
+
+    if (storedName && storedHour) {
+      const today = new Date();
+      const dayNum = today.getDay(); // Sunday = 0, Saturday = 6
+
+    if (dayNum === 0 || dayNum === 6) {
+      // Weekend: go to points screen!
+      window.location.href = "points.html?lastname=" + encodeURIComponent(storedName) + "&hour=" + storedHour;
+    } else {
+      // Weekday: go to math game as before
+      const gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
+      // game assignment: Monday = 0 (so gameTypeArray[dayNum - 1])
+      let weekdayNum = dayNum - 1;
+      if (weekdayNum < 0 || weekdayNum > 4) weekdayNum = 0;  // default to addition if weird
+      let gameType = gameTypeArray[weekdayNum];
+      window.location.href = "index_new.html?lastname=" + encodeURIComponent(storedName)
+        + "&hour=" + storedHour
+        + "&game=" + gameType;
+    }
+  }
   </script>
 </head>
 <body>
