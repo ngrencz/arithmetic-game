@@ -8,18 +8,37 @@ const hour = localStorage.getItem('mathgame_hour');
 const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents"];
 const scopeTypes = ["class", "overall"];
 
-function showUserInfo() {
-  let info = `<h2>Welcome ${lastname} (Hour ${hour})</h2>`;
-  let points = localStorage.getItem(`mathgame_${lastname}_${hour}_points`) || "0";
-  info += "<ul>";
+// ASYNC: SHOW USER INFO FROM SUPABASE ONLY
+async function showUserInfo() {
+  document.getElementById('user-info').innerHTML =
+    `<h2>Welcome ${lastname} (Hour ${hour})</h2><p>Loading your scores...</p>`;
+
+  const { data, error } = await supabase
+    .from('scores')
+    .select('game_type, score, points')
+    .eq('lastname', lastname)
+    .eq('hour', hour);
+
+  if (error || !data || !data.length) {
+    document.getElementById('user-info').innerHTML =
+      `<h2 id="user-header">Welcome ${lastname} (Hour ${hour})</h2><p>No scores found.</p>`;
+    return;
+  }
+
+  let info = `<h2 id="user-header">Welcome ${lastname} (Hour ${hour})</h2><ul>`;
+  // get their best score per game type from their scores
+  let points = data[0].points || 0; // if points are global, otherwise pick max or sum
   for (const gt of gameTypes) {
-    const best = localStorage.getItem(`mathgame_${lastname}_${hour}_bestscore_${gt}`) || "0";
-    info += `<li>Best ${gt}: <b>${best}</b></li>`;
+    // If you might have multiple rows per gameType, find max score:
+    const rows = data.filter(r => r.game_type === gt);
+    const bestScore = rows.length > 0 ? Math.max(...rows.map(r => r.score || 0)) : 0;
+    info += `<li>Best ${gt}: <b>${bestScore}</b></li>`;
   }
   info += `</ul><b>Your Points: ${points}</b>`;
   document.getElementById('user-info').innerHTML = info;
 }
 
+// AGGREGATE LEADERBOARD DATA
 function aggregateLeaderboard(data) {
   const users = {};
   data.forEach(row => {
@@ -33,12 +52,13 @@ function aggregateLeaderboard(data) {
       };
     }
   });
-  return Object.values(users).sort((a, b) => b.points - a.points);
+  return Object.values(users).sort((a, b) => b.score - a.score);
 }
 
+// GET LEADERBOARD DATA PURELY FROM SUPABASE
 async function getLeaderboard(gameType, scope) {
   let qb = supabase.from('scores')
-    .select('lastname, hour, score, game_type')
+    .select('lastname, hour, score, game_type, points')
     .eq('game_type', gameType);
 
   if (scope === "class") qb = qb.eq('hour', hour);
@@ -47,7 +67,7 @@ async function getLeaderboard(gameType, scope) {
   if (error) return `<p>Error: ${error.message}</p>`;
   if (!data || !data.length) return `<p>No scores yet!</p>`;
 
-  // Aggregate so only each student's best score in this gameType/hour is considered
+  // Aggregate: each user's best score for gameType/hour
   const users = {};
   data.forEach(row => {
     const key = row.lastname + "/" + row.hour;
@@ -55,11 +75,11 @@ async function getLeaderboard(gameType, scope) {
       users[key] = {
         lastname: row.lastname,
         hour: row.hour,
-        score: row.score
+        score: row.score,
+        points: row.points
       };
     }
   });
-  // Sort by score descending
   const agg = Object.values(users).sort((a, b) => b.score - a.score);
 
   let rows = agg.map(row =>
@@ -76,7 +96,7 @@ async function getLeaderboard(gameType, scope) {
   </table>`;
 }
 
-// LEVEL ONE: Show operations menu
+// MENU SYSTEM (UNCHANGED; PURELY COSMETIC)
 function buildOperationMenu(selectedGame) {
   const menuBar = document.getElementById('menu-bar');
   menuBar.innerHTML = '';
@@ -85,14 +105,13 @@ function buildOperationMenu(selectedGame) {
     btn.className = (g === selectedGame ? 'active' : '');
     btn.textContent = g[0].toUpperCase() + g.slice(1);
     btn.onclick = () => {
-      buildScopeMenu(g, "class"); // Default to "class" when changing op
+      buildScopeMenu(g, "class");
       renderLeaderboard(g, "class");
     };
     menuBar.appendChild(btn);
   }
 }
 
-// LEVEL TWO: Show scope menu after op clicked
 function buildScopeMenu(gameType, selectedScope) {
   const submenuBar = document.getElementById('submenu-bar');
   submenuBar.innerHTML = '';
@@ -101,14 +120,14 @@ function buildScopeMenu(gameType, selectedScope) {
     btn.className = (s === selectedScope ? 'active' : '');
     btn.textContent = (s === "class" ? `Class Hour (${hour})` : 'Overall');
     btn.onclick = () => {
-      buildScopeMenu(gameType, s); // To update active state
+      buildScopeMenu(gameType, s);
       renderLeaderboard(gameType, s);
     };
     submenuBar.appendChild(btn);
   }
 }
 
-// RENDER
+// RENDER BOTH USER INFO AND LEADERBOARD ON LOAD
 async function renderLeaderboard(gameType, scope) {
   buildOperationMenu(gameType);
   buildScopeMenu(gameType, scope);
@@ -117,6 +136,8 @@ async function renderLeaderboard(gameType, scope) {
   document.getElementById('leaderboard-content').innerHTML = html;
 }
 
-// INIT
-showUserInfo();
-renderLeaderboard('addition', 'class');
+// INIT PAGE -- ALL ASYNC
+(async () => {
+  await showUserInfo();
+  renderLeaderboard('addition', 'class');
+})();
