@@ -55,6 +55,7 @@ body {
   background: #fff;
   padding: 3em;
   width: 90vw;
+  max-width: 500px;  
   border-radius: 22px;
   margin: auto;
   border-radius: 15px;
