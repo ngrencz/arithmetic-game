@@ -9,10 +9,15 @@ body {
 }
 
 #user-info {
-  width: 100%;
-  max-width: 1000px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px #05B25A22;
+  width: 90vw;
+  max-width: 600px;
   margin: 2em auto 0 auto;
+  padding: 1.4em 1em;
   text-align: center;
+  font-size: 1.22em;
 }
 #login-box {
   background: #fff;
