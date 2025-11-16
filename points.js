@@ -7,7 +7,58 @@ const lastname = localStorage.getItem('mathgame_lastname');
 const hour = localStorage.getItem('mathgame_hour');
 const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents"];
 const scopeTypes = ["class", "overall"];
+document.getElementById('redeem-btn').onclick = async function() {
+  const redeemAmount = parseInt(document.getElementById('redeem-amount').value, 10);
+  const msgBox = document.getElementById('redeem-message');
+  msgBox.style.color = "#c00"; // red for errors
 
+  if (!redeemAmount || redeemAmount < 1) {
+    msgBox.textContent = "Enter at least 1 point to redeem.";
+    return;
+  }
+
+  // 1. Fetch all point transactions for this user/hour
+  const { data, error } = await supabase
+    .from('scores')
+    .select('points')
+    .eq('lastname', lastname)
+    .eq('hour', hour);
+
+  if (error || !data) {
+    msgBox.textContent = "Could not load your points; try again.";
+    return;
+  }
+  // 2. Calculate current balance by sum
+  const totalPoints = data.reduce((acc, row) => acc + (row.points || 0), 0);
+
+  if (redeemAmount > totalPoints) {
+    msgBox.textContent = `Not enough points! You only have ${totalPoints}.`;
+    return;
+  }
+
+  // 3. Log the redemption by creating a negative points entry
+  const { error: insertError } = await supabase
+    .from('scores')
+    .insert([{
+      lastname,
+      hour,
+      game_type: 'redeem',          // Use 'redeem' or similar
+      score: 0,                     // No game score, this is a redemption
+      points: -redeemAmount,        // Negative entry for ledger
+      created_at: new Date().toISOString()
+    }]);
+
+  if (insertError) {
+    msgBox.textContent = "Error recording redemption; try again.";
+    return;
+  }
+
+  msgBox.style.color = "#03793A"; // green for success
+  msgBox.textContent = `Success! Redeemed ${redeemAmount} point${redeemAmount > 1 ? 's' : ''}. You now have ${totalPoints - redeemAmount} points left.`;
+
+  // Optionally, refresh user info display if you want instant update:
+  await showUserInfo();
+};
 // ASYNC: SHOW USER INFO FROM SUPABASE ONLY
 async function showUserInfo() {
   document.getElementById('user-info').innerHTML =
@@ -27,7 +78,7 @@ async function showUserInfo() {
 
   let info = `<h2 id="user-header">Welcome ${lastname} (Hour ${hour})</h2><ul>`;
   // get their best score per game type from their scores
-  let points = data[0].points || 0; // if points are global, otherwise pick max or sum
+  let points = data.reduce((acc, row) => acc + (row.points || 0), 0);
   for (const gt of gameTypes) {
     // If you might have multiple rows per gameType, find max score:
     const rows = data.filter(r => r.game_type === gt);
