@@ -202,6 +202,7 @@ function init(options) {
         if (value.trim() === String(genned.answer)) {
             const now = Date.now();
             thisProblemLog.timeMs = now - problemStartTime;
+            thisProblemLog.timeStamp = now;
             problemLog.push(thisProblemLog);
             problemStartTime = now;
             problemGeng();
@@ -224,19 +225,41 @@ function init(options) {
             // End-of-game UI and score/points
             banner.find('.start').hide();
             banner.find('.end').show();
-            const result = updateScoreAndPoints(correct_ct);
-            let message = `Score: ${correct_ct}`;
-            if (result && result.beatBest) { message += " (New best!)"; }
-            message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
-            message += `<br>Your points: ${result ? result.points : ""}`;
-            banner.find('.correct').html(message);
+          // --- SUSPICIOUS ACTIVITY CHECK ---
+// 1. Thresholds
+const MAX_PROBLEM_TIME_MS = 30000; // 30s per problem
+const MAX_IDLE_TIME_MS = 60000;    // 1 min idle at end
 
-            // Submit to Supabase
-            submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
-          // Redirect after a short delay (e.g. 2 seconds so user can see message)
-    setTimeout(function() {
-        window.location.href = 'points.html';
-    }, 2000);
+// 2. Suspicious answers count
+let suspiciousAnswers = problemLog.filter(prob => prob.timeMs > MAX_PROBLEM_TIME_MS).length;
+
+// 3. Idle time since last answer
+let lastAnswerTime = problemLog.length > 0
+  ? (problemLog[problemLog.length - 1].timeStamp || startTime)
+  : startTime;
+let idleAtEnd = (Date.now() - lastAnswerTime) > MAX_IDLE_TIME_MS;
+
+let honestPlay = (suspiciousAnswers < Math.floor(problemLog.length * 0.3)) && !idleAtEnd;
+
+// 4. If suspicious, suppress point award and set generic message
+if (!honestPlay) {
+    message += "<br>Suspicious activity detected – no point awarded.";
+    // DO NOT update points or submit point to Supabase
+} else {
+    // Normal awarding
+    const result = updateScoreAndPoints(correct_ct);
+    if (result && result.beatBest) { message += " (New best!)"; }
+    message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
+    message += `<br>Your points: ${result ? result.points : ""}`;
+    // Display and save to Supabase
+    submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
+}
+
+banner.find('.correct').html(message);
+
+setTimeout(function() {
+    window.location.href = 'points.html';
+}, 2000);
         }
     }, 1000);
 }
