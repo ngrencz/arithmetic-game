@@ -80,9 +80,9 @@
         errBox.textContent = "Please enter your last name.";
         return;
       }
-      if (!/^0[1-7]$/.test(hour)) {
-        errBox.textContent = "Please select your hour (01-07).";
-        return;
+      if (!/^0[0-7]$/.test(hour)) {
+       errBox.textContent = "Please select your hour (01-07 or Guest).";
+      return;
       }
 
       // Supabase: check if name exists
