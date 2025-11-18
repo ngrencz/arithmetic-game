@@ -9,7 +9,8 @@
   <div id="login-box">
     <h2 style="color: #05B25A;">Sign In</h2>
     <label for="lastname">Last Name:</label>
-    <input id="lastname" type="text" maxlength="20" placeholder="Last Name">
+    <input id="lastname" type="text" maxlength="20" placeholder="Last Name" autocomplete="family-name">
+
     <label for="hour">Hour:</label>
     <select id="hour">
       <option value="">Select Hour</option>
@@ -32,12 +33,12 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Helper function: Redirect based on day
+    // Helper function to handle redirects
     function redirectForDay(lastname, hour) {
-      const dayNum = (new Date()).getDay(); // 0 = Sunday ... 6 = Saturday
+      const dayNum = (new Date()).getDay();
       const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
       if (dayNum >= 1 && dayNum <= 5) {
-        const gameType = gameTypeArray[dayNum - 1]; // Mon=1->addition, ..., Fri=5->exponents
+        const gameType = gameTypeArray[dayNum - 1];
         window.location.href =
           "index_new.html?lastname=" + encodeURIComponent(lastname)
           + "&hour=" + hour
@@ -49,7 +50,7 @@
       }
     }
 
-    // AUTO-LOGIN BYPASS LOGIC (Supabase check)
+    // AUTO-LOGIN (no exceptions; ALL login types checked against Supabase)
     async function autoLoginCheck() {
       const storedName = localStorage.getItem('mathgame_lastname');
       const storedHour = localStorage.getItem('mathgame_hour');
@@ -57,35 +58,33 @@
         const { data, error } = await supabase
           .from('scores')
           .select('id')
-          .eq('lastname', storedName)
+          .ilike('lastname', storedName)
           .eq('hour', storedHour);
+
         if (error) {
           console.error("Supabase error during auto-login:", error);
-          // Optionally show an error or let user log in manually
           return;
         }
         if (data && data.length > 0) {
-          // Entry exists, redirect
           redirectForDay(storedName, storedHour);
         } else {
-          // Not valid, clear auto-login
           localStorage.removeItem('mathgame_lastname');
           localStorage.removeItem('mathgame_hour');
-          // User stays on login page
+          // They remain on login page
         }
       }
     }
 
     autoLoginCheck();
 
-    // MANUAL LOGIN HANDLER
+    // MANUAL LOGIN
     document.getElementById("login-btn").onclick = async function() {
       var lastname = document.getElementById("lastname").value.trim();
       var hour = document.getElementById("hour").value;
       var errBox = document.getElementById("login-error");
       errBox.textContent = '';
 
-      // Validate inputs
+      // Validate
       if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
         errBox.textContent = "Please enter your last name.";
         return;
@@ -95,31 +94,27 @@
         return;
       }
 
-      // For guest hour ("00"), allow all names
-      if (hour !== "00") {
-        // Must exist for this name+hour
-        const { data, error } = await supabase
-          .from('scores')
-          .select('id')
-          .eq('lastname', lastname)
-          .eq('hour', hour);
+      // Must exist for this name+hour (NO guest bypass)
+      const { data, error } = await supabase
+        .from('scores')
+        .select('id')
+        .ilike('lastname', lastname)
+        .eq('hour', hour);
 
-        if (error) {
-          errBox.textContent = "Cannot check name right now. Try again later.";
-          console.error(error);
-          return;
-        }
-        if (!data || data.length === 0) {
-          errBox.textContent = "Name not found for your selected hour. Please check your spelling or ask your teacher.";
-          return;
-        }
+      if (error) {
+        errBox.textContent = "Cannot check name right now. Try again later.";
+        console.error(error);
+        return;
+      }
+      if (!data || data.length === 0) {
+        errBox.textContent = "Name not found for your selected hour. Please check your spelling or ask your teacher.";
+        return;
       }
 
       // Save to localStorage for auto-login next time
       localStorage.setItem('mathgame_lastname', lastname);
       localStorage.setItem('mathgame_hour', hour);
 
-      // Redirect
       redirectForDay(lastname, hour);
     };
 
