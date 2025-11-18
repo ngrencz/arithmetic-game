@@ -54,12 +54,6 @@
       const storedName = localStorage.getItem('mathgame_lastname');
       const storedHour = localStorage.getItem('mathgame_hour');
       if (storedName && storedHour) {
-        if (storedHour === "00") {
-          // Guest is always allowed
-          redirectForDay(storedName, storedHour);
-          return;
-        }
-        // Otherwise, validate against Supabase
         const { data, error } = await supabase
           .from('scores')
           .select('id')
