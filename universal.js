@@ -259,11 +259,14 @@ function init(options) {
 
     // Show message in the right place
     banner.find('.end .correct').html(message);
-
+    banner.find('.end .correct').css({
+      "color": "#c00",
+      "fontWeight": "bold"
+    });
     // Always redirect after feedback
     setTimeout(function() {
         window.location.href = 'points.html';
-    }, 2000);
+    }, 4000);
 }
     }, 1000);
 }
