@@ -218,49 +218,53 @@ function init(options) {
         const d = duration - Math.floor((Date.now() - startTime) / 1000);
         $('.seconds').text(d);
         if (d <= 0) {
-            problemLog.push(thisProblemLog);
-            answer.prop('disabled', true);
-            clearInterval(timer);
+    problemLog.push(thisProblemLog);
+    answer.prop('disabled', true);
+    clearInterval(timer);
 
-            // End-of-game UI and score/points
-            banner.find('.start').hide();
-            banner.find('.end').show();
-          // --- SUSPICIOUS ACTIVITY CHECK ---
-// 1. Thresholds
-const MAX_PROBLEM_TIME_MS = 30000; // 30s per problem
-const MAX_IDLE_TIME_MS = 60000;    // 1 min idle at end
+    // End-of-game UI and score/points
+    banner.find('.start').hide();
+    banner.find('.end').show();
 
-// 2. Suspicious answers count
-let suspiciousAnswers = problemLog.filter(prob => prob.timeMs > MAX_PROBLEM_TIME_MS).length;
+    // --- Message Variable ---
+    let message = `Score: ${correct_ct}`;
 
-// 3. Idle time since last answer
-let lastAnswerTime = problemLog.length > 0
-  ? (problemLog[problemLog.length - 1].timeStamp || startTime)
-  : startTime;
-let idleAtEnd = (Date.now() - lastAnswerTime) > MAX_IDLE_TIME_MS;
+    // --- SUSPICIOUS ACTIVITY CHECK ---
+    const MAX_PROBLEM_TIME_MS = 30000; // 30s per problem
+    const MAX_IDLE_TIME_MS = 60000;    // 1 min idle at end
 
-let honestPlay = (suspiciousAnswers < Math.floor(problemLog.length * 0.3)) && !idleAtEnd;
+    // Check for slow answers
+    let suspiciousAnswers = problemLog.filter(prob => prob.timeMs > MAX_PROBLEM_TIME_MS).length;
 
-// 4. If suspicious, suppress point award and set generic message
-if (!honestPlay) {
-    message += "<br>Suspicious activity detected – no point awarded.";
-    // DO NOT update points or submit point to Supabase
-} else {
-    // Normal awarding
-    const result = updateScoreAndPoints(correct_ct);
-    if (result && result.beatBest) { message += " (New best!)"; }
-    message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
-    message += `<br>Your points: ${result ? result.points : ""}`;
-    // Display and save to Supabase
-    submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
+    // Check for idle at end
+    let lastAnswerTime = problemLog.length > 0
+      ? (problemLog[problemLog.length - 1].timeStamp || startTime)
+      : startTime;
+    let idleAtEnd = (Date.now() - lastAnswerTime) > MAX_IDLE_TIME_MS;
+
+    // Decide if play was honest
+    let honestPlay = (suspiciousAnswers < Math.floor(problemLog.length * 0.3)) && !idleAtEnd;
+
+    if (!honestPlay) {
+        // Suspicious play: suppress point award and display generic message
+        message += "<br>Suspicious activity detected – no point awarded.";
+    } else {
+        // Normal awarding and save to Supabase
+        const result = updateScoreAndPoints(correct_ct);
+        if (result && result.beatBest) { message += " (New best!)"; }
+        message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
+        message += `<br>Your points: ${result ? result.points : ""}`;
+        submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
+    }
+
+    // Show message in the right place
+    banner.find('.end .correct').html(message);
+
+    // Always redirect after feedback
+    setTimeout(function() {
+        window.location.href = 'points.html';
+    }, 2000);
 }
-          
-banner.find('.end .correct').html(message);
-
-setTimeout(function() {
-    window.location.href = 'points.html';
-}, 2000);
-        }
     }, 1000);
 }
 
