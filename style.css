@@ -154,6 +154,14 @@ body {
 }
 #redeem-box h3 { margin-top: 0; }
 
+.redeem-caption {
+  color: #888;
+  margin-top: 0.8em;
+  text-align: center;
+  font-size: 1em;
+  opacity: 0.8;
+  font-style: italic; /* optional, makes it look like a comment */
+}
 .problem {
   font-size: 1.5em;
   margin: 0 0.3em;
