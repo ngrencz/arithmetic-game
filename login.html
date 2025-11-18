@@ -5,43 +5,28 @@
   <title>Grencz's Grinch Points Math Game Login</title>
   <link rel="stylesheet" href="style.css">
   <script type="module">
-    // AUTO-LOGIN BYPASS LOGIC -- runs instantly
-    const storedName = localStorage.getItem('mathgame_lastname');
-    const storedHour = localStorage.getItem('mathgame_hour');
+  // AUTO-LOGIN BYPASS LOGIC -- runs instantly
+  const storedName = localStorage.getItem('mathgame_lastname');
+  const storedHour = localStorage.getItem('mathgame_hour');
 
-    if (storedName && storedHour) {
-      const gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
-      let dayNum = (new Date()).getDay() - 1;
-      if (dayNum < 0 || dayNum > 4) dayNum = 0;
-      let gameType = gameTypeArray[dayNum];
-      window.location.href = "index_new.html?lastname=" + encodeURIComponent(storedName)
-          + "&hour=" + storedHour
-          + "&game=" + gameType;
-      // The redirect happens right away, so page UI won't display.
-    }
-    const storedName = localStorage.getItem('mathgame_lastname');
-    const storedHour = localStorage.getItem('mathgame_hour');
+  if (storedName && storedHour) {
+    const dayNum = (new Date()).getDay();
+    const gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
 
-    if (storedName && storedHour) {
-      const today = new Date();
-      const dayNum = today.getDay(); // Sunday = 0, Saturday = 6
-
-    if (dayNum === 0 || dayNum === 6) {
-      // Weekend: go to points screen!
-      window.location.href = "points.html?lastname=" + encodeURIComponent(storedName) + "&hour=" + storedHour;
-    } else {
-      // Weekday: go to math game as before
-      const gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
-      // game assignment: Monday = 0 (so gameTypeArray[dayNum - 1])
-      let weekdayNum = dayNum - 1;
-      if (weekdayNum < 0 || weekdayNum > 4) weekdayNum = 0;  // default to addition if weird
-      let gameType = gameTypeArray[weekdayNum];
+    if (dayNum >= 1 && dayNum <= 5) {
+      // Weekdays: assign corresponding game type (Monday=1 is addition, ... Friday=5 is exponents)
+      const gameType = gameTypeArray[dayNum - 1];
       window.location.href = "index_new.html?lastname=" + encodeURIComponent(storedName)
         + "&hour=" + storedHour
         + "&game=" + gameType;
+    } else {
+      // Weekend (Sunday=0, Saturday=6): go to points screen
+      window.location.href = "points.html?lastname=" + encodeURIComponent(storedName)
+        + "&hour=" + storedHour;
     }
   }
-  </script>
+</script>
+
 </head>
 <body>
   <div id="login-box">
@@ -107,16 +92,23 @@
 
   // Proceed with normal login...
   var gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
-  var dayNum = (new Date()).getDay() - 1;
-  if (dayNum < 0 || dayNum > 4) dayNum = 0;
-  var gameType = gameTypeArray[dayNum];
+var dayNum = (new Date()).getDay();
+var nextURL;
+if (dayNum >= 1 && dayNum <= 5) {
+  var gameType = gameTypeArray[dayNum - 1];
+  nextURL = "index_new.html?lastname=" + encodeURIComponent(lastname)
+    + "&hour=" + hour
+    + "&game=" + gameType;
+} else {
+  // Weekend (Sunday=0, Saturday=6)
+  nextURL = "points.html?lastname=" + encodeURIComponent(lastname)
+    + "&hour=" + hour;
+}
 
-  localStorage.setItem('mathgame_lastname', lastname);
-  localStorage.setItem('mathgame_hour', hour);
+localStorage.setItem('mathgame_lastname', lastname);
+localStorage.setItem('mathgame_hour', hour);
 
-  window.location.href = "index_new.html?lastname=" + encodeURIComponent(lastname)
-      + "&hour=" + hour
-      + "&game=" + gameType;
+window.location.href = nextURL;
 };
 
     // Enter key triggers login
