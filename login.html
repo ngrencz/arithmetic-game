@@ -63,7 +63,7 @@
         const { data, error } = await supabase
           .from('scores')
           .select('id')
-          .ilike('lastname', storedName)
+          .eq('lastname', storedName)
           .eq('hour', storedHour);
         if (error) {
           console.error("Supabase error during auto-login:", error);
@@ -107,7 +107,7 @@
         const { data, error } = await supabase
           .from('scores')
           .select('id')
-          .ilike('lastname', lastname)
+          .eq('lastname', lastname)
           .eq('hour', hour);
 
         if (error) {
