@@ -79,41 +79,45 @@
       if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
         errBox.textContent = "Please enter your last name.";
         return;
-      }
+        }
       if (!/^0[0-7]$/.test(hour)) {
-       errBox.textContent = "Please select your hour (01-07 or Guest).";
-      return;
-      }
+        errBox.textContent = "Please select your hour (01-07 or Guest).";
+        return;
+        }
 
-      // Supabase: check if name exists
+      // For guest hour ("00"), allow all names
+      if (hour !== "00") {
+      // Must exist for this name+hour
       const { data, error } = await supabase
         .from('scores')
         .select('id')
-        .ilike('lastname', lastname); // Case-insensitive
+        .ilike('lastname', lastname)
+        .eq('hour', hour);
 
       if (error) {
         errBox.textContent = "Cannot check name right now. Try again later.";
         console.error(error);
         return;
-      }
+        }
       if (!data || data.length === 0) {
-        errBox.textContent = "Name not found. Please check your spelling or ask your teacher.";
+        errBox.textContent = "Name not found for your selected hour. Please check your spelling or ask your teacher.";
         return;
+        }
       }
 
-      // Game setup
-      var gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
-      var dayNum = (new Date()).getDay() - 1; // 0=Mon
-      if (dayNum < 0 || dayNum > 4) dayNum = 0;
-      var gameType = gameTypeArray[dayNum];
+  // Proceed with normal login...
+  var gameTypeArray = ["addition","subtraction","multiplication","division","exponents"];
+  var dayNum = (new Date()).getDay() - 1;
+  if (dayNum < 0 || dayNum > 4) dayNum = 0;
+  var gameType = gameTypeArray[dayNum];
 
-      localStorage.setItem('mathgame_lastname', lastname);
-      localStorage.setItem('mathgame_hour', hour);
+  localStorage.setItem('mathgame_lastname', lastname);
+  localStorage.setItem('mathgame_hour', hour);
 
-      window.location.href = "index_new.html?lastname=" + encodeURIComponent(lastname)
-          + "&hour=" + hour
-          + "&game=" + gameType;
-    };
+  window.location.href = "index_new.html?lastname=" + encodeURIComponent(lastname)
+      + "&hour=" + hour
+      + "&game=" + gameType;
+};
 
     // Enter key triggers login
     document.getElementById("hour").addEventListener('keydown', function(e){
