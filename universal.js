@@ -254,8 +254,8 @@ if (!honestPlay) {
     // Display and save to Supabase
     submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
 }
-
-banner.find('.correct').html(message);
+          
+banner.find('.end .correct').html(message);
 
 setTimeout(function() {
     window.location.href = 'points.html';
