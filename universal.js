@@ -180,36 +180,29 @@ function init(options) {
 
     let genned, thisProblemLog;
     function problemGeng() {
-        genned = problemGen();
-        thisProblemLog = { problem: genned.plainProblem, answer: genned.answer, entry: [], timeMs: -1 };
-        problem.text(genned.prettyProblem);
-        answer.val('');
+    genned = problemGen();
+    thisProblemLog = { problem: genned.plainProblem, answer: genned.answer, entry: [], timeMs: -1 };
+    problem.text(genned.prettyProblem);
+    answer.val('');
+    problemStartTime = Date.now(); // <-- THIS resets the timer per problem
+}
     }
 
     const startTime = (problemStartTime = Date.now());
     let correct_ct = 0;
     const problemLog = [];
-    answer.on('input', function (e) {
-        const value = e.currentTarget.value;
-        if (thisProblemLog.entry) {
-            const lastEntry = thisProblemLog.entry[thisProblemLog.entry.length - 1] ?? '';
-            if (value.length - lastEntry.length > 1 || /[^-\d\s]/.test(value) || lastEntry.length >= 2 + String(genned.answer).length) {
-                thisProblemLog.entry = null;
-            } else {
-                thisProblemLog.entry.push(value);
-            }
-        }
-        if (value.trim() === String(genned.answer)) {
-            const now = Date.now();
-            thisProblemLog.timeMs = now - problemStartTime;
-            thisProblemLog.timeStamp = now;
-            problemLog.push(thisProblemLog);
-            problemStartTime = now;
-            problemGeng();
-            correct.text('Score: ' + ++correct_ct);
-        }
-        return true;
-    });
+   answer.on('input', function (e) {
+    const value = e.currentTarget.value;
+    if (value.trim() === String(genned.answer)) {
+        const now = Date.now();
+        thisProblemLog.timeMs = now - problemStartTime;
+        thisProblemLog.timeStamp = now;
+        problemLog.push(thisProblemLog);
+        problemGeng(); // Shows next problem; timer is reset inside!
+        correct.text('Score: ' + ++correct_ct);
+    }
+    return true;
+});
 
     problemGeng();
 
