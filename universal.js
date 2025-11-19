@@ -20,7 +20,7 @@ let options = {
     add: false, sub: false, mul: false, div: false,
     add_left_min: 2, add_left_max: 12, add_right_min: 2, add_right_max: 12,
     mul_left_min: 2, mul_left_max: 12, mul_right_min: 2, mul_right_max: 12,
-    duration: 120
+    duration: 180
 };
 
 switch(gameType) {
@@ -212,7 +212,7 @@ function init(options) {
 
     problemGeng();
 
-    const duration = options.duration || 120;
+    const duration = options.duration || 180;
     const timer = setInterval(function () {
         const d = duration - Math.floor((Date.now() - startTime) / 1000);
         $('.seconds').text(d);
