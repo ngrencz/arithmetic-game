@@ -60,13 +60,23 @@ function updateScoreAndPoints(currentScore) {
     let bestScore = Number(localStorage.getItem(keyBest)) || 0;
     let points = Number(localStorage.getItem(keyPoints)) || 0;
     let beatBest = false;
+    let sessionPoints = 0;
 
     if (currentScore > bestScore) {
         localStorage.setItem(keyBest, currentScore);
-        localStorage.setItem(keyPoints, points + 1);
+        points++; // increment for beating best
+        localStorage.setItem(keyPoints, points);
         beatBest = true;
+        sessionPoints = 1; // the point earned *this session*
     }
-    return { bestScore: Math.max(currentScore, bestScore), points: points + (beatBest ? 1 : 0), beatBest };
+
+    // sessionPoints is either 1 (if best beaten) or 0
+    return {
+        bestScore: Math.max(currentScore, bestScore),
+        points,                     // total, for display
+        beatBest,
+        sessionPoints               // send *this* to Supabase!
+    };
 }
 
 // --- Game UI Setup and Logic ---
@@ -232,7 +242,7 @@ function init(options) {
             banner.find('.correct').html(message);
 
             // Submit to Supabase
-            submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.points);
+            submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.sessionPoints);
           // Redirect after a short delay (e.g. 2 seconds so user can see message)
     setTimeout(function() {
         window.location.href = 'points.html';
