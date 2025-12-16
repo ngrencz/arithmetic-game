@@ -17,6 +17,8 @@
         <th>Last Name</th>
         <th>Hour</th>
         <th>Points Redeemed</th>
+        <th>Redeemed At</th>
+
       </tr>
     </thead>
     <tbody id="redemption-list">
@@ -49,12 +51,14 @@
     function renderTable(redemptions) {
       const tbody = document.getElementById('redemption-list');
       tbody.innerHTML = '';
-      redemptions.forEach(({ lastname, hour, points }) => {
+      redemptions.forEach(({ lastname, hour, points, created_at }) => {
+        const localTime = created_at ? new Date(created_at).toLocaleString() : "";
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${lastname}</td>
           <td>${hour}</td>
           <td>${points}</td>
+          <td>${localTime}</td>
         `;
         tbody.appendChild(tr);
       });
