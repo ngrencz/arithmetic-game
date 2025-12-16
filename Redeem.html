@@ -35,9 +35,9 @@
       // Fetch only records where game_type = 'redeem'
       const { data, error } = await supabase
         .from('scores') // your table name
-        .select('lastname, hour, points, redeemed_at')
+        .select('lastname, hour, points, created_at')
         .eq('game_type', 'redeem')
-        .order('redeemed_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error(error);
