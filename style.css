@@ -175,5 +175,31 @@ input.answer {
   border-radius: 15px;
   border: 3px solid #fff;      
 }
+#leaderboard-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  background: #fff;
+  box-shadow: 0 4px 16px #05B25A22;
+  border-radius: 12px;
+  overflow: hidden;
+}
+#leaderboard-table th, #leaderboard-table td {
+  background: #fff;
+  color: #222;
+  border: 2px solid #111;
+  padding: 10px 14px;
+  font-size: 1.07em;
+}
+#leaderboard-table th {
+  background: #e6e6e6;
+  font-weight: bold;
+}
+#leaderboard-table tbody tr:nth-child(even) td {
+  background: #f7fff7;
+}
+#leaderboard-table tbody tr {
+  border-bottom: 2px solid #111;
+}
 .left, .correct { margin-right: 1em; font-size: 1.2em; }
 .end { text-align: center; }
