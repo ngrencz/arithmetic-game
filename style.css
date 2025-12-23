@@ -260,3 +260,8 @@ input.answer {
 #leaderboard-window tbody tr:nth-child(even) td {
   background: #f7fff7;
 }
+#leaderboard-window table,
+#leaderboard-window th,
+#leaderboard-window td {
+  font-size: 0.97em; /* or smaller as you prefer, e.g. 0.92em */
+}
