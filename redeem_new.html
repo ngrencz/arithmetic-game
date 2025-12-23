@@ -69,10 +69,106 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function fetchRedemptions() {
-      // Fetch only records where game_type = 'redeem'
+    // --- Fetch names and points for the selected hour ---
+    async function fetchNamesAndPointsForHour(hour) {
+      if (!hour) return [];
+      // Fetch all non-redeem score events for this hour
       const { data, error } = await supabase
-        .from('scores') // your table name
+        .from('scores')
+        .select('lastname, hour, points, game_type')
+        .eq('hour', hour)
+        .neq('lastname', '')
+        .neq('game_type', 'redeem');
+
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      // Aggregate (sum) points for each username
+      const pointsByName = {};
+      data.forEach(row => {
+        pointsByName[row.lastname] = (pointsByName[row.lastname] || 0) + (row.points || 0);
+      });
+      // Return [{lastname, points}, ...]
+      return Object.entries(pointsByName).map(([lastname, points]) => ({ lastname, points }));
+    }
+
+    // --- Update Name Dropdown and Points Map ---
+    async function updateNameDropdown() {
+      const hour = document.getElementById("hour-select").value;
+      const nameSelect = document.getElementById("name-select");
+      nameSelect.innerHTML = '<option value="">Select Name</option>';
+      document.getElementById('points-available').textContent = '';
+      if (!hour) return;
+      const allNamesAndPoints = await fetchNamesAndPointsForHour(hour);
+      allNamesAndPoints.forEach(({ lastname }) => {
+        const opt = document.createElement('option');
+        opt.value = lastname;
+        opt.textContent = lastname;
+        nameSelect.appendChild(opt);
+      });
+      // Store all available points for later lookup on select
+      nameSelect._pointsMap = Object.fromEntries(allNamesAndPoints.map(np => [np.lastname, np.points]));
+    }
+
+    document.getElementById("hour-select").addEventListener("change", updateNameDropdown);
+
+    // --- Show Available Points When Name Selected ---
+    document.getElementById("name-select").addEventListener("change", function() {
+      const name = this.value;
+      const pointsMap = this._pointsMap || {};
+      const pts = pointsMap[name] ?? 0;
+      document.getElementById('points-available').textContent =
+        name ? (`Available Points: ${pts}`) : "";
+    });
+
+    // --- Submit Redemption Event ---
+    document.getElementById("redeem-submit").addEventListener("click", async () => {
+      const hour = document.getElementById("hour-select").value;
+      const lastname = document.getElementById("name-select").value;
+      const pointsRaw = parseInt(document.getElementById("redeem-points").value, 10);
+      const messageSpan = document.getElementById("redeem-message");
+      messageSpan.textContent = '';
+
+      if (!hour || !lastname || isNaN(pointsRaw) || pointsRaw <= 0) {
+        messageSpan.style.color = 'red';
+        messageSpan.textContent = "Please fill out all fields correctly!";
+        return;
+      }
+      const points = -Math.abs(pointsRaw); // Always negative
+
+      // Insert redemption row into Supabase
+      const { data, error } = await supabase
+        .from('scores')
+        .insert([{
+          lastname,
+          hour,
+          points,
+          game_type: "redeem",
+          score: 0,
+          created_at: new Date().toISOString()
+        }]);
+
+      if (error) {
+        console.error(error);
+        messageSpan.style.color = 'red';
+        messageSpan.textContent = "Error redeeming points!";
+        return;
+      }
+      messageSpan.style.color = 'green';
+      messageSpan.textContent = "Points redeemed!";
+
+      // Optionally reset to defaults
+      document.getElementById("redeem-points").value = "1";
+      setTimeout(() => { messageSpan.textContent = ''; }, 2000);
+
+      updateBoard(); // refresh the table
+    });
+
+    // --- Table code ---
+    async function fetchRedemptions() {
+      const { data, error } = await supabase
+        .from('scores')
         .select('lastname, hour, points, created_at')
         .eq('game_type', 'redeem')
         .order('created_at', { ascending: false });
@@ -113,13 +209,10 @@
       const data = await fetchRedemptions();
       renderTable(data);
     }
-
-    // Run every 5s as a fallback (optional)
     setInterval(updateBoard, 5000);
-    // Run once immediately on load
     updateBoard();
 
-    // Realtime Supabase subscription updates
+    // Realtime subscription for instant updates
     const channel = supabase.channel('scores-redeem');
     channel
       .on('postgres_changes', {
