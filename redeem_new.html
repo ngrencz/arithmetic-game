@@ -162,7 +162,15 @@
       document.getElementById("redeem-points").value = "1";
       setTimeout(() => { messageSpan.textContent = ''; }, 2000);
 
-      updateBoard(); // refresh the table
+      updateBoard(); // refresh the tableawait updateNameDropdown();
+        await updateNameDropdown();
+        // If currently-selected name, reset points displayed for it:
+        const nameSelect = document.getElementById("name-select");
+        const name = nameSelect.value;
+        const pointsMap = nameSelect._pointsMap || {};
+        const pts = pointsMap[name] ?? 0;
+        document.getElementById('points-available').textContent =
+          name ? (`Available Points: ${pts}`) : "";
     });
 
     // --- Table code ---
