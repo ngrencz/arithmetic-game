@@ -55,7 +55,62 @@ body {
   width: 80%;
   box-shadow: 0 6px 16px #2221;
 }
+.card-box {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px #05B25A22;
+  max-width: 600px;
+  width: 90vw;
+  margin: 2em auto 0 auto;
+  padding: 1.4em 1em;
+  text-align: center;
+}
 
+/* Title gets its own bubble at the top */
+.page-title.card-box {
+  font-size: 2em;
+  font-weight: bold;
+  color: #03793A;
+  margin-top: 2.2em;
+}
+
+#redeem-box.card-box {
+  padding: 1.3em 1em;
+  font-size: 1.16em;
+}
+
+#leaderboard-window.card-box {
+  padding: 1.2em 1em;
+  font-size: 1.16em;
+}
+
+/* Table in leaderboard bubble */
+#leaderboard-window table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #05B25A18;
+  overflow: hidden;
+}
+
+#leaderboard-window th, #leaderboard-window td {
+  border: 2px solid #05B25A;
+  background: #fff;
+  padding: 10px 14px;
+  font-size: 1.07em;
+  color: #222;
+}
+
+#leaderboard-window th {
+  background: #e6e6e6;
+  font-weight: bold;
+}
+
+#leaderboard-window tbody tr:nth-child(even) td {
+  background: #f7fff7;
+}
 #login-box button {
   font-size: 1.1em;
   background: #05B25A;
