@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Live Points Redemption Table</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Title Bubble -->
+  <div class="card-box" style="font-size:2em; font-weight:bold; color:#03793A; margin-top:2.2em; margin-bottom:0.4em;">
+    Live Points Redemption Board
+  </div>
+
+  <!-- Redemption Form Bubble -->
+  <div class="card-box" id="redeem-box">
+    <form class="form-inline" onsubmit="return false;">
+      <label for="hour-select">Hour:</label>
+      <select id="hour-select">
+        <option value="">Select Hour</option>
+        <option value="00">Hour 00</option>
+        <option value="01">Hour 01</option>
+        <option value="02">Hour 02</option>
+        <option value="03">Hour 03</option>
+        <option value="04">Hour 04</option>
+        <option value="05">Hour 05</option>
+        <option value="06">Hour 06</option>
+        <option value="07">Hour 07</option>
+      </select>
+
+      <label for="name-select">Name:</label>
+      <select id="name-select">
+        <option value="">Select Name</option>
+      </select>
+
+      <span id="points-available" style="font-weight:bold; margin-left:10px;"></span>
+
+      <label for="redeem-points" style="margin-left:10px;">Points to Deduct:</label>
+      <input type="number" id="redeem-points" value="1" min="1" style="width:50px;" />
+
+      <button id="redeem-submit">Redeem Points</button>
+      <span id="redeem-message" style="color:green; margin-left:10px;"></span>
+    </form>
+    <div class="redeem-caption" style="margin-top:0.9em;">
+      Redeem this many points for prizes
+    </div>
+  </div>
+
+  <!-- Leaderboard Bubble -->
+  <div class="card-box" id="leaderboard-window" style="padding-top:0.6em;">
+    <table id="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Last Name</th>
+          <th>Hour</th>
+          <th>Points Redeemed</th>
+          <th>Redeemed At</th>
+        </tr>
+      </thead>
+      <tbody id="redemption-list"></tbody>
+    </table>
+  </div>
+
+  <!-- Include your working JS exactly as before -->
+  <script type="module">
+    /* (all previous script unchanged, as in your working version) */
+    // ...your full points redemption JS goes here...
+  </script>
+</body>
+</html>
