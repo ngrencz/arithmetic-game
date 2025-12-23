@@ -72,26 +72,26 @@
     // --- Fetch names and points for the selected hour ---
     async function fetchNamesAndPointsForHour(hour) {
       if (!hour) return [];
-      // Fetch all non-redeem score events for this hour
       const { data, error } = await supabase
         .from('scores')
-        .select('lastname, hour, points, game_type')
+        .select('lastname, hour, points')
         .eq('hour', hour)
-        .neq('lastname', '')
-        .neq('game_type', 'redeem');
+        .neq('lastname', ''); // Do not filter by game_type
 
       if (error) {
         console.error(error);
         return [];
-      }
-      // Aggregate (sum) points for each username
-      const pointsByName = {};
-      data.forEach(row => {
-        pointsByName[row.lastname] = (pointsByName[row.lastname] || 0) + (row.points || 0);
-      });
-      // Return [{lastname, points}, ...]
-      return Object.entries(pointsByName).map(([lastname, points]) => ({ lastname, points }));
-    }
+  }
+
+  // Aggregate: sum all points for each username, including negative (redeem) and positive (earn)
+  const pointsByName = {};
+  data.forEach(row => {
+    pointsByName[row.lastname] = (pointsByName[row.lastname] || 0) + (row.points || 0);
+  });
+
+  // Return as array for dropdown use
+  return Object.entries(pointsByName).map(([lastname, points]) => ({ lastname, points }));
+}
 
     // --- Update Name Dropdown and Points Map ---
     async function updateNameDropdown() {
