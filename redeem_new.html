@@ -61,9 +61,67 @@
   </div>
 
   <!-- Include your working JS exactly as before -->
+  
   <script type="module">
-    /* (all previous script unchanged, as in your working version) */
-    // ...your full points redemption JS goes here...
+    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+
+    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function fetchRedemptions() {
+      // Fetch only records where game_type = 'redeem'
+      const { data, error } = await supabase
+        .from('scores') // your table name
+        .select('lastname, hour, points, created_at')
+        .eq('game_type', 'redeem')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data;
+    }
+
+    function renderTable(redemptions) {
+      const tbody = document.getElementById('redemption-list');
+      tbody.innerHTML = '';
+      redemptions.forEach(({ lastname, hour, points, created_at }) => {
+        const localTime = created_at ? new Date(created_at).toLocaleString() : "";
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${lastname}</td>
+          <td>${hour}</td>
+          <td>${points}</td>
+          <td>${localTime}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function updateBoard() {
+      const data = await fetchRedemptions();
+      renderTable(data);
+    }
+
+    // Run every 5s as a fallback (optional)
+    setInterval(updateBoard, 5000);
+    // Run once immediately on load
+    updateBoard();
+
+    // Realtime Supabase subscription updates
+    const channel = supabase.channel('scores-redeem');
+    channel
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'scores',
+        filter: 'game_type=eq.redeem'
+      }, payload => {
+        updateBoard();
+      })
+      .subscribe();
   </script>
 </body>
 </html>
