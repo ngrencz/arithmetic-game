@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Points Redemption Table</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    table { border-collapse: collapse; margin-top: 1em; }
+    th, td { padding: 8px 16px; border: 1px solid #aaa; }
+    th { background: #f0f0f0; }
+    .form-inline { margin-top: 1em; }
+    .form-inline select, .form-inline input { margin-right: 10px; }
+    .form-inline button { margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Live Points Redemption Board</h2>
+
+  <!-- Redemption Form -->
+  <div class="form-inline">
+    <label for="hour-select">Hour:</label>
+    <select id="hour-select">
+      <option value="">Select Hour</option>
+      <option value="01">Hour 01</option>
+      <option value="02">Hour 02</option>
+      <option value="03">Hour 03</option>
+      <option value="04">Hour 04</option>
+      <option value="05">Hour 05</option>
+      <option value="06">Hour 06</option>
+      <option value="07">Hour 07</option>
+    </select>
+
+    <label for="name-select">Name:</label>
+    <select id="name-select">
+      <option value="">Select Name</option>
+    </select>
+
+    <label for="redeem-points">Points to Deduct:</label>
+    <input type="number" id="redeem-points" value="1" min="1" style="width:50px;" />
+
+    <button id="redeem-submit">Redeem Points</button>
+    <span id="redeem-message" style="color:green; margin-left:10px;"></span>
+  </div>
+
+  <!-- Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Last Name</th>
+        <th>Hour</th>
+        <th>Points Redeemed</th>
+        <th>Redeemed At</th>
+      </tr>
+    </thead>
+    <tbody id="redemption-list"></tbody>
+  </table>
+
+  <script type="module">
+    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+
+    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- Fetch unique names for dropdown ---
+    async function fetchNamesForHour(hour) {
+      if (!hour) return [];
+      const { data, error } = await supabase
+        .from('scores')
+        .select('lastname')
+        .eq('hour', hour)
+        .neq('lastname', '') // skip blanks
+        .neq('game_type', 'redeem') // you might prefer not to filter, adjust if needed
+        .order('lastname', { ascending: true });
+
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      // Unique names only
+      const uniqueNames = [...new Set(data.map(row => row.lastname))];
+      return uniqueNames;
+    }
+
+    // --- Update Name Dropdown Based on Hour ---
+    async function updateNameDropdown() {
+      const hour = document.getElementById("hour-select").value;
+      const nameSelect = document.getElementById("name-select");
+      nameSelect.innerHTML = '<option value="">Select Name</option>';
+      if (!hour) return;
+      const names = await fetchNamesForHour(hour);
+      names.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        nameSelect.appendChild(opt);
+      });
+    }
+
+    document.getElementById("hour-select").addEventListener("change", updateNameDropdown);
+
+    // --- Submit Redemption Event ---
+    document.getElementById("redeem-submit").addEventListener("click", async () => {
+      const hour = document.getElementById("hour-select").value;
+      const lastname = document.getElementById("name-select").value;
+      const pointsRaw = parseInt(document.getElementById("redeem-points").value, 10);
+      const messageSpan = document.getElementById("redeem-message");
+      messageSpan.textContent = '';
+
+      if (!hour || !lastname || isNaN(pointsRaw) || pointsRaw <= 0) {
+        messageSpan.style.color = 'red';
+        messageSpan.textContent = "Please fill out all fields correctly!";
+        return;
+      }
+      const points = -Math.abs(pointsRaw); // always negative
+
+      // Insert redemption row into Supabase
+      const { data, error } = await supabase
+        .from('scores')
+        .insert([{
+          lastname,
+          hour,
+          points,
+          game_type: "redeem",
+          score: 0,
+          created_at: new Date().toISOString()
+        }]);
+
+      if (error) {
+        console.error(error);
+        messageSpan.style.color = 'red';
+        messageSpan.textContent = "Error redeeming points!";
+        return;
+      }
+      messageSpan.style.color = 'green';
+      messageSpan.textContent = "Points redeemed!";
+
+      // Optionally reset to defaults
+      document.getElementById("redeem-points").value = "1";
+      setTimeout(() => { messageSpan.textContent = ''; }, 2000);
+
+      updateBoard(); // refresh the table
+    });
+
+    // --- Table code from your working version ---
+    async function fetchRedemptions() {
+      const { data, error } = await supabase
+        .from('scores')
+        .select('lastname, hour, points, created_at')
+        .eq('game_type', 'redeem')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data;
+    }
+
+    function renderTable(redemptions) {
+      const tbody = document.getElementById('redemption-list');
+      tbody.innerHTML = '';
+      redemptions.forEach(({ lastname, hour, points, created_at }) => {
+        const localTime = created_at ? new Date(created_at).toLocaleString() : "";
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${lastname}</td>
+          <td>${hour}</td>
+          <td>${points}</td>
+          <td>${localTime}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function updateBoard() {
+      const data = await fetchRedemptions();
+      renderTable(data);
+    }
+    setInterval(updateBoard, 5000);
+    updateBoard();
+
+    // Realtime subscription for instant updates
+    const channel = supabase.channel('scores-redeem');
+    channel
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'scores',
+        filter: 'game_type=eq.redeem'
+      }, payload => {
+        updateBoard();
+      })
+      .subscribe();
+  </script>
+</body>
+</html>
