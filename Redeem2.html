@@ -3,15 +3,9 @@
 <head>
   <title>Live Points Redemption Table</title>
   <link rel="stylesheet" href="style.css">
-  
   <style>
-    body { font-family: Arial, sans-serif; }
-    table { border-collapse: collapse; margin-top: 1em; }
-    th, td { padding: 8px 16px; border: 1px solid #aaa; }
-    th { background: #f0f0f0; }
-    .form-inline { margin-top: 1em; }
-    .form-inline select, .form-inline input { margin-right: 10px; }
-    .form-inline button { margin-left: 10px; }
+    /* Only override table cell backgrounds */
+    td, th { background: #fff !important; }
   </style>
 </head>
 <body>
@@ -37,7 +31,9 @@
       <option value="">Select Name</option>
     </select>
 
-    <label for="redeem-points">Points to Deduct:</label>
+    <span id="points-available" style="font-weight:bold; margin-left:10px;"></span>
+
+    <label for="redeem-points" style="margin-left:10px;">Points to Deduct:</label>
     <input type="number" id="redeem-points" value="1" min="1" style="width:50px;" />
 
     <button id="redeem-submit">Redeem Points</button>
@@ -64,42 +60,58 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- Fetch unique names for dropdown ---
-    async function fetchNamesForHour(hour) {
+    // --- Fetch names and points for the selected hour ---
+    async function fetchNamesAndPointsForHour(hour) {
       if (!hour) return [];
+      // Fetch all non-redeem score events for this hour
       const { data, error } = await supabase
         .from('scores')
-        .select('lastname')
+        .select('lastname, hour, points, game_type')
         .eq('hour', hour)
-        .neq('lastname', '') // skip blanks
-        .neq('game_type', 'redeem') // you might prefer not to filter, adjust if needed
-        .order('lastname', { ascending: true });
+        .neq('lastname', '')
+        .neq('game_type', 'redeem');
 
       if (error) {
         console.error(error);
         return [];
       }
-      // Unique names only
-      const uniqueNames = [...new Set(data.map(row => row.lastname))];
-      return uniqueNames;
+      // Aggregate (sum) points for each username
+      const pointsByName = {};
+      data.forEach(row => {
+        pointsByName[row.lastname] = (pointsByName[row.lastname] || 0) + (row.points || 0);
+      });
+      // Return [{lastname, points}, ...]
+      return Object.entries(pointsByName).map(([lastname, points]) => ({ lastname, points }));
     }
 
-    // --- Update Name Dropdown Based on Hour ---
+    // --- Update Name Dropdown and Points Map ---
     async function updateNameDropdown() {
       const hour = document.getElementById("hour-select").value;
       const nameSelect = document.getElementById("name-select");
       nameSelect.innerHTML = '<option value="">Select Name</option>';
+      document.getElementById('points-available').textContent = '';
       if (!hour) return;
-      const names = await fetchNamesForHour(hour);
-      names.forEach(name => {
+      const allNamesAndPoints = await fetchNamesAndPointsForHour(hour);
+      allNamesAndPoints.forEach(({ lastname }) => {
         const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
+        opt.value = lastname;
+        opt.textContent = lastname;
         nameSelect.appendChild(opt);
       });
+      // Store all available points for later lookup on select
+      nameSelect._pointsMap = Object.fromEntries(allNamesAndPoints.map(np => [np.lastname, np.points]));
     }
 
     document.getElementById("hour-select").addEventListener("change", updateNameDropdown);
+
+    // --- Show Available Points When Name Selected ---
+    document.getElementById("name-select").addEventListener("change", function() {
+      const name = this.value;
+      const pointsMap = this._pointsMap || {};
+      const pts = pointsMap[name] ?? 0;
+      document.getElementById('points-available').textContent =
+        name ? (`Available Points: ${pts}`) : "";
+    });
 
     // --- Submit Redemption Event ---
     document.getElementById("redeem-submit").addEventListener("click", async () => {
@@ -114,7 +126,7 @@
         messageSpan.textContent = "Please fill out all fields correctly!";
         return;
       }
-      const points = -Math.abs(pointsRaw); // always negative
+      const points = -Math.abs(pointsRaw); // Always negative
 
       // Insert redemption row into Supabase
       const { data, error } = await supabase
@@ -144,7 +156,7 @@
       updateBoard(); // refresh the table
     });
 
-    // --- Table code from your working version ---
+    // --- Table code ---
     async function fetchRedemptions() {
       const { data, error } = await supabase
         .from('scores')
