@@ -254,6 +254,10 @@ function init(options) {
             fetchTotalPoints(lastname, hour).then(points => {
               message += `<br>Your points: ${points}`;
               banner.find('.correct').html(message);
+              $('.left').html(
+                `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
+                ` | Best: ${getBestAndPoints().bestScore} | Points: ${points}`
+              );
             });
             // Submit to Supabase
             submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.sessionPoints);
