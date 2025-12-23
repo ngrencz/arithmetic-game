@@ -30,7 +30,19 @@ switch(gameType) {
     case "division": options.div = true; break;
     case "exponents": options.exp = true; break; 
 }
-
+async function fetchTotalPoints(lastname, hour) {
+  if (!lastname || !hour) return 0;
+  const { data, error } = await supabase
+    .from('scores')
+    .select('points')
+    .eq('lastname', lastname)
+    .eq('hour', hour);
+  if (error || !data) {
+    console.error('Points fetch error:', error);
+    return 0;
+  }
+  return data.reduce((sum, row) => sum + (row.points || 0), 0);
+}
 function rand(n) { return Math.floor(Math.random() * n); }
 
 function getBestAndPoints() {
@@ -81,13 +93,14 @@ function updateScoreAndPoints(currentScore) {
 
 // --- Game UI Setup and Logic ---
 $(function() {
-    const { bestScore, points } = getBestAndPoints();
     if (lastname) {
-        $('.left').html(
-            `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
-            ` | Best: ${bestScore} | Points: ${points}`
-        );
-    }
+  fetchTotalPoints(lastname, hour).then(points => {
+    $('.left').html(
+      `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
+      ` | Best: ${getBestAndPoints().bestScore} | Points: ${points}`
+    );
+  });
+}
 
     // --- Main Game Logic ---
     init(options);
@@ -238,9 +251,10 @@ function init(options) {
             let message = `Score: ${correct_ct}`;
             if (result && result.beatBest) { message += " (New best!)"; }
             message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
-            message += `<br>Your points: ${result ? result.points : ""}`;
-            banner.find('.correct').html(message);
-
+            fetchTotalPoints(lastname, hour).then(points => {
+              message += `<br>Your points: ${points}`;
+              banner.find('.correct').html(message);
+            });
             // Submit to Supabase
             submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.sessionPoints);
           // Redirect after a short delay (e.g. 2 seconds so user can see message)
