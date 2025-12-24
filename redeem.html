@@ -101,6 +101,8 @@
       document.getElementById('points-available').textContent = '';
       if (!hour) return;
       const allNamesAndPoints = await fetchNamesAndPointsForHour(hour);
+      // Sort alphabetically by lastname
+      allNamesAndPoints.sort((a, b) => a.lastname.localeCompare(b.lastname));
       allNamesAndPoints.forEach(({ lastname }) => {
         const opt = document.createElement('option');
         opt.value = lastname;
