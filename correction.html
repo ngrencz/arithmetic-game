@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supabase Score Correction</title>
+</head>
+<body>
+  <h3>Score Correction Tool</h3>
+  <button id="run-corrector">Run Correction</button>
+  <pre id="results"></pre>
+  <script type="module">
+    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+    // --- CONFIG ---
+    const SUPABASE_URL = "https://YOUR.supabase.co";
+    const SUPABASE_KEY = "YOUR_SUPABASE_KEY";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function runCorrection() {
+      const resBox = document.getElementById("results");
+      resBox.textContent = "Fetching all scores...";
+      // Get all entries (paging for big sets)
+      let { data, error } = await supabase
+        .from('scores')
+        .select('id, lastname, hour, game_type, score, points, created_at')
+        .order('created_at', { ascending: true });
+      if (error) {
+        resBox.textContent = `Error: ${error.message}`;
+        return;
+      }
+      resBox.textContent = `Loaded ${data.length} entries. Processing...`;
+
+      // Group by lastname+hour+game_type
+      let updateCount = 0;
+      const grouped = {};
+      data.forEach(row => {
+        const key = `${row.lastname}____${row.hour}____${row.game_type}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(row);
+      });
+
+      let updates = [];
+
+      for (const key of Object.keys(grouped)) {
+        let best = -Infinity;
+        grouped[key].forEach(row => {
+          if (row.score > best) {
+            best = row.score;
+            // This row is a valid "beat best" score; do nothing
+          } else {
+            // This row did NOT beat best—should not have a point.
+            if (row.points !== 0) {
+              updates.push(row.id);
+            }
+          }
+        });
+      }
+
+      resBox.textContent = `Found ${updates.length} invalid points to fix...`;
+
+      // Batch update all bad rows (set points to 0)
+      for (let i = 0; i < updates.length; i += 50) {
+        const batch = updates.slice(i, i + 50);
+        const { error } = await supabase
+          .from('scores')
+          .update({ points: 0 })
+          .in('id', batch);
+        if (error) {
+          resBox.textContent += `\nError updating IDs [${batch.join(',')}]: ${error.message}`;
+        }
+      }
+
+      resBox.textContent += `\nDone. Updated ${updates.length} records to points=0.`;
+    }
+
+    document.getElementById("run-corrector").onclick = runCorrection;
+  </script>
+</body>
+</html>
