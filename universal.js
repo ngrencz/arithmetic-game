@@ -118,11 +118,9 @@ if (lastname) {
       `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
       ` | Best: ${bestScore} | Points: ${points}`
     );
-  });
-}
-
     // --- Main Game Logic ---
     init(options);
+    }
 });
 
 function init(options) {
