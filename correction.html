@@ -9,31 +9,33 @@
   <pre id="results"></pre>
   <script type="module">
     import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
-    // --- CONFIG ---
     const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function runCorrection() {
       const resBox = document.getElementById("results");
       resBox.textContent = "Fetching all scores...";
-      // Get all entries (paging for big sets)
+
       let { data, error } = await supabase
-  .from('scores')
-  .select('id, lastname, hour, game_type, score, points, created_at')
-  .order('created_at', { ascending: true });
+        .from('scores')
+        .select('id, lastname, hour, game_type, score, points, created_at')
+        .order('created_at', { ascending: true });
 
-if (error) {
-  resBox.textContent = `Error: ${error.message}`;
-  return;
-}
+      if (error) {
+        resBox.textContent = `Error: ${error.message}`;
+        return;
+      }
 
-// Remove 'redeem' and 'bonus' after fetch
-data = data.filter(row => row.game_type !== 'redeem' && row.game_type !== 'bonus');
-      resBox.textContent = `Loaded ${data.length} entries. Processing...`;
+      // Only process records not in redeem/bonus
+      data = data.filter(row => {
+        let gt = (row.game_type || "").toLowerCase().trim();
+        return gt !== 'redeem' && gt !== 'bonus';
+      });
 
-      // Group by lastname+hour+game_type
-      let updateCount = 0;
+      resBox.textContent = `Loaded ${data.length} valid entries. Processing...`;
+
+      // Group by lastname, hour, game_type
       const grouped = {};
       data.forEach(row => {
         const key = `${row.lastname}____${row.hour}____${row.game_type}`;
@@ -41,38 +43,40 @@ data = data.filter(row => row.game_type !== 'redeem' && row.game_type !== 'bonus
         grouped[key].push(row);
       });
 
+      // For each user/hour/game_type, mark all non-best scores for update
       let updates = [];
 
-      for (const key of Object.keys(grouped)) {
+      Object.values(grouped).forEach(rows => {
         let best = -Infinity;
-        grouped[key].forEach(row => {
+        rows.forEach(row => {
           if (row.score > best) {
             best = row.score;
-            // This row is a valid "beat best" score; do nothing
           } else {
-            // This row did NOT beat best—should not have a point.
-            if (row.points !== 0) {
-              updates.push(row.id);
-            }
+            // Only add for update if points != 0
+            if (row.points !== 0) updates.push(row.id);
           }
         });
-      }
+      });
 
-      resBox.textContent = `Found ${updates.length} invalid points to fix...`;
+      resBox.textContent = `Found ${updates.length} invalid points to fix...\n`;
 
-      // Batch update all bad rows (set points to 0)
+      // Now batch update these in chunks of 50
+      let fixed = 0;
       for (let i = 0; i < updates.length; i += 50) {
-        const batch = updates.slice(i, i + 50);
+        const batch = updates.slice(i, i+50);
         const { error } = await supabase
           .from('scores')
           .update({ points: 0 })
           .in('id', batch);
         if (error) {
-          resBox.textContent += `\nError updating IDs [${batch.join(',')}]: ${error.message}`;
+          resBox.textContent += `Error updating IDs [${batch.join(', ')}]: ${error.message}\n`;
+        } else {
+          resBox.textContent += `Updated points=0 for IDs [${batch.join(', ')}]\n`;
+          fixed += batch.length;
         }
       }
 
-      resBox.textContent += `\nDone. Updated ${updates.length} records to points=0.`;
+      resBox.textContent += `\nDone. Updated ${fixed} records to points=0.`;
     }
 
     document.getElementById("run-corrector").onclick = runCorrection;
