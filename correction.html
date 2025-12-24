@@ -19,14 +19,17 @@
       resBox.textContent = "Fetching all scores...";
       // Get all entries (paging for big sets)
       let { data, error } = await supabase
-        .from('scores')
-        .select('id, lastname, hour, game_type, score, points, created_at')
-        .not('game_type', 'in', ['redeem', 'bonus'])
-        .order('created_at', { ascending: true });
-      if (error) {
-        resBox.textContent = `Error: ${error.message}`;
-        return;
-      }
+  .from('scores')
+  .select('id, lastname, hour, game_type, score, points, created_at')
+  .order('created_at', { ascending: true });
+
+if (error) {
+  resBox.textContent = `Error: ${error.message}`;
+  return;
+}
+
+// Remove 'redeem' and 'bonus' after fetch
+data = data.filter(row => row.game_type !== 'redeem' && row.game_type !== 'bonus');
       resBox.textContent = `Loaded ${data.length} entries. Processing...`;
 
       // Group by lastname+hour+game_type
