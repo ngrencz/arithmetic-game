@@ -115,7 +115,7 @@ function updateScoreAndPoints(currentScore) {
     fetchTotalPoints(lastname, hour)
   ]).then(([bestScore, points]) => {
     $('.left').html(
-  `<span class="game-userinfo">${lastname} (${hour}) | Best: ${bestScore} | Points: ${points}</span><br>` +
+  `<span class="game-userinfo">${lastname} (${hour}) | Best: ${bestScore} | Points: ${points}</span><br><br>` +
   `<span class="game-seconds">Seconds left: <span class="seconds">0</span></span>`
   );
     // --- Main Game Logic ---
