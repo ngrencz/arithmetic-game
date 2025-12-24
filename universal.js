@@ -115,9 +115,9 @@ function updateScoreAndPoints(currentScore) {
     fetchTotalPoints(lastname, hour)
   ]).then(([bestScore, points]) => {
     $('.left').html(
-      `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
-      ` | Best: ${bestScore} | Points: ${points}`
-    );
+  `<span class="game-userinfo">${lastname} (${hour}) | Best: ${bestScore} | Points: ${points}</span><br>` +
+  `<span class="game-seconds">Seconds left: <span class="seconds">0</span></span>`
+  );
     // --- Main Game Logic ---
     init(options);
   }); // <<< The closing parenthesis and semicolon finish the .then()
