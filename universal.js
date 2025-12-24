@@ -120,7 +120,6 @@ if (lastname) {
     );
     // --- Main Game Logic ---
     init(options);
-    }
 });
 
 function init(options) {
