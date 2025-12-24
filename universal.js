@@ -109,19 +109,19 @@ function updateScoreAndPoints(currentScore) {
 }
 
 // --- Game UI Setup and Logic ---
-if (lastname) {
-  Promise.all([
-    fetchBestScore(lastname, hour, gameType),
-    fetchTotalPoints(lastname, hour)
-  ]).then(([bestScore, points]) => {
-    $('.left').html(
-      `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
-      ` | Best: ${bestScore} | Points: ${points}`
-    );
-    // --- Main Game Logic ---
-    init(options);
-});
-
+  if (lastname) {
+    Promise.all([
+      fetchBestScore(lastname, hour, gameType),
+      fetchTotalPoints(lastname, hour)
+    ]).then(([bestScore, points]) => {
+      $('.left').html(
+        `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
+        ` | Best: ${bestScore} | Points: ${points}`
+      );
+      // --- Main Game Logic ---
+      init(options);
+  });
+}
 function init(options) {
     let problemStartTime;
     const game = $('#game');
