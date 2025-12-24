@@ -43,6 +43,23 @@ async function fetchTotalPoints(lastname, hour) {
   }
   return data.reduce((sum, row) => sum + (row.points || 0), 0);
 }
+
+async function fetchBestScore(lastname, hour, gameType) {
+  if (!lastname || !hour || !gameType) return 0;
+  const { data, error } = await supabase
+    .from('scores')
+    .select('score')
+    .eq('lastname', lastname)
+    .eq('hour', hour)
+    .eq('game_type', gameType);
+
+  if (error || !data) {
+    console.error('Best score fetch error:', error);
+    return 0;
+  }
+  return data.reduce((max, row) => Math.max(max, row.score || 0), 0);
+}
+
 function rand(n) { return Math.floor(Math.random() * n); }
 
 function getBestAndPoints() {
@@ -92,12 +109,14 @@ function updateScoreAndPoints(currentScore) {
 }
 
 // --- Game UI Setup and Logic ---
-$(function() {
-    if (lastname) {
-  fetchTotalPoints(lastname, hour).then(points => {
+if (lastname) {
+  Promise.all([
+    fetchBestScore(lastname, hour, gameType),
+    fetchTotalPoints(lastname, hour)
+  ]).then(([bestScore, points]) => {
     $('.left').html(
       `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
-      ` | Best: ${getBestAndPoints().bestScore} | Points: ${points}`
+      ` | Best: ${bestScore} | Points: ${points}`
     );
   });
 }
@@ -250,13 +269,16 @@ function init(options) {
             const result = updateScoreAndPoints(correct_ct);
             let message = `Score: ${correct_ct}`;
             if (result && result.beatBest) { message += " (New best!)"; }
-            message += `<br>Your best: ${result ? result.bestScore : correct_ct}`;
-            fetchTotalPoints(lastname, hour).then(points => {
+             Promise.all([
+              fetchBestScore(lastname, hour, gameType),
+              fetchTotalPoints(lastname, hour)
+            ]).then(([bestScore, points]) => {
+              message += `<br>Your best: ${bestScore}`;
               message += `<br>Your points: ${points}`;
               banner.find('.correct').html(message);
               $('.left').html(
                 `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
-                ` | Best: ${getBestAndPoints().bestScore} | Points: ${points}`
+                ` | Best: ${bestScore} | Points: ${points}`
               );
             });
             // Submit to Supabase
