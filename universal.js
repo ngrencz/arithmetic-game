@@ -292,6 +292,7 @@ function init(options) {
         });
     }
 }, 1000);
+}
 // Restart handler
 $(document).on('click', '#try-again', function(e) {
     e.preventDefault();
