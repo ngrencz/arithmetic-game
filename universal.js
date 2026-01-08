@@ -81,33 +81,33 @@ async function submitScoreToSupabase(lastname, hour, gameType, score, points) {
     }
 }
 
-function updateScoreAndPoints(currentScore) {
+
+function updateScoreAndPoints(currentScore, bestScoreFromDB) {
     if (!lastname || !hour) return;
     const keyBest = `mathgame_${lastname}_${hour}_bestscore_${gameType}`;
     const keyPoints = `mathgame_${lastname}_${hour}_points`;
 
-    let bestScore = Number(localStorage.getItem(keyBest)) || 0;
+    let bestScore = typeof bestScoreFromDB === 'number' ? bestScoreFromDB : Number(localStorage.getItem(keyBest)) || 0;
     let points = Number(localStorage.getItem(keyPoints)) || 0;
+
     let beatBest = false;
     let sessionPoints = 0;
 
     if (currentScore > bestScore) {
-        localStorage.setItem(keyBest, currentScore);
-        points++; // increment for beating best
+        localStorage.setItem(keyBest, currentScore); // You can update local cache
+        points++;
         localStorage.setItem(keyPoints, points);
         beatBest = true;
-        sessionPoints = 1; // the point earned *this session*
+        sessionPoints = 1;
     }
 
-    // sessionPoints is either 1 (if best beaten) or 0
     return {
         bestScore: Math.max(currentScore, bestScore),
-        points,                     // total, for display
+        points,
         beatBest,
-        sessionPoints               // send *this* to Supabase!
+        sessionPoints
     };
 }
-
 // --- Game UI Setup and Logic ---
   if (lastname) {
   Promise.all([
@@ -253,41 +253,45 @@ function init(options) {
 
     const duration = options.duration || 180;
     const timer = setInterval(function () {
-        const d = duration - Math.floor((Date.now() - startTime) / 1000);
-        $('.seconds').text(d);
-        if (d <= 0) {
-            problemLog.push(thisProblemLog);
-            answer.prop('disabled', true);
-            clearInterval(timer);
+    const d = duration - Math.floor((Date.now() - startTime) / 1000);
+    $('.seconds').text(d);
+    if (d <= 0) {
+        // ---- END OF GAME BLOCK ----
+        problemLog.push(thisProblemLog);
+        answer.prop('disabled', true);
+        clearInterval(timer);
 
-            // End-of-game UI and score/points
-            banner.find('.start').hide();
-            banner.find('.end').show();
-            const result = updateScoreAndPoints(correct_ct);
+        banner.find('.start').hide();
+        banner.find('.end').show();
+
+        // Fetch best score from Supabase, THEN decide if a point is earned
+        fetchBestScore(lastname, hour, gameType).then(bestScoreSupabase => {
+            const result = updateScoreAndPoints(correct_ct, bestScoreSupabase);
+            submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.sessionPoints);
+
             let message = `Score: ${correct_ct}`;
             if (result && result.beatBest) { message += " (New best!)"; }
-             Promise.all([
-              fetchBestScore(lastname, hour, gameType),
-              fetchTotalPoints(lastname, hour)
-            ]).then(([bestScore, points]) => {
-              message += `<br>Your best: ${bestScore}`;
-              message += `<br>Your points: ${points}`;
-              banner.find('.correct').html(message);
-              $('.left').html(
-                `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
-                ` | Best: ${bestScore} | Points: ${points}`
-              );
-            });
-            // Submit to Supabase
-            submitScoreToSupabase(lastname, hour, gameType, correct_ct, result.sessionPoints);
-          // Redirect after a short delay (e.g. 2 seconds so user can see message)
-    setTimeout(function() {
-        window.location.href = 'points.html';
-    }, 2000);
-        }
-    }, 1000);
-}
 
+            // Now (optionally), update UI with latest scores from DB
+            Promise.all([
+                fetchBestScore(lastname, hour, gameType),
+                fetchTotalPoints(lastname, hour)
+            ]).then(([bestScore, points]) => {
+                message += `<br>Your best: ${bestScore}`;
+                message += `<br>Your points: ${points}`;
+                banner.find('.correct').html(message);
+                $('.left').html(
+                    `Seconds left: <span class="seconds">0</span> | ${lastname} (${hour})` +
+                    ` | Best: ${bestScore} | Points: ${points}`
+                );
+            });
+
+            setTimeout(function() {
+                window.location.href = 'points.html';
+            }, 2000);
+        });
+    }
+}, 1000);
 // Restart handler
 $(document).on('click', '#try-again', function(e) {
     e.preventDefault();
