@@ -27,16 +27,36 @@
   </div>
 
   <div class="card-box">
-    <!-- 2. Add Points to Student -->
-    <section>
-      <h2>Manually Add Points</h2>
-      <input type="text" id="add-points-name" placeholder="Student Name">
-      <input type="text" id="add-points-hour" placeholder="Hour">
-      <input type="text" id="add-points-game-type" placeholder="Game Type">
-      <input type="number" id="add-points-amount" placeholder="Points" min="1" max="50" value="1">
-      <button id="add-points-btn">Add Points</button>
-    </section>
-  </div>
+  <section>
+    <h2>Manually Add Points</h2>
+    <label for="add-points-hour">Hour:</label>
+    <select id="add-points-hour">
+      <option value="">Select Hour</option>
+      <option value="00">Hour 00</option>
+      <option value="01">Hour 01</option>
+      <option value="02">Hour 02</option>
+      <option value="03">Hour 03</option>
+      <option value="04">Hour 04</option>
+      <option value="05">Hour 05</option>
+      <option value="06">Hour 06</option>
+      <option value="07">Hour 07</option>
+    </select>
+
+    <label for="add-points-name">Name:</label>
+    <select id="add-points-name">
+      <option value="">Select Student</option>
+      <!-- filled by JS -->
+    </select>
+
+    <label for="add-points-game-type">Game Type:</label>
+    <input type="text" id="add-points-game-type" value="bonus" placeholder="Game Type">
+
+    <label for="add-points-amount">Points:</label>
+    <input type="number" id="add-points-amount" placeholder="Points" min="1" max="50" value="1">
+
+    <button id="add-points-btn">Add Points</button>
+  </section>
+</div>
 
   <div class="card-box">
     <!-- 3. Change Hour for a Student -->
