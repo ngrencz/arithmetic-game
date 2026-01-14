@@ -5,41 +5,10 @@ const adminSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadStudentNamesForHour(hour) {
   if (!hour) {
-    // If no hour is selected, clear dropdown
     let $dropdown = $("#add-points-name").empty();
     $dropdown.append('<option value="">Select Student</option>');
     return;
   }
-  async function loadAllStudentsWithHour() {
-  const { data, error } = await adminSupabase
-    .from('scores')
-    .select('lastname, hour')
-  if (error) return showMessage("Could not fetch students", "red");
-  // Show only unique [name, hour] pairs
-  let pairs = [];
-  const seen = new Set();
-  data.forEach(row => {
-    const key = `${row.lastname}|${row.hour}`;
-    if (row.lastname && row.hour && !seen.has(key)) {
-      pairs.push({ lastname: row.lastname, hour: row.hour });
-      seen.add(key);
-    }
-  });
-  pairs.sort((a, b) => {
-    // Sort by lastname, then hour
-    const nameCompare = a.lastname.localeCompare(b.lastname);
-    if (nameCompare !== 0) return nameCompare;
-    return a.hour.localeCompare(b.hour);
-  });
-  let $dropdown = $("#change-hour-student").empty();
-  $dropdown.append('<option value="">Select Student</option>');
-  pairs.forEach(pair => {
-    $dropdown.append(
-      `<option value="${pair.lastname}|${pair.hour}">${pair.lastname} (${pair.hour})</option>`
-    );
-  });
-}
-  
   const { data, error } = await adminSupabase
     .from('scores')
     .select('lastname')
@@ -53,14 +22,41 @@ async function loadStudentNamesForHour(hour) {
     $dropdown.append(`<option value="${name}">${name}</option>`);
   });
 }
+
+// (2) Then create this as its own function (move it OUT of the other function):
+
+async function loadAllStudentsWithHour() {
+  const { data, error } = await adminSupabase
+    .from('scores')
+    .select('lastname, hour');
+  if (error) return showMessage("Could not fetch students", "red");
+  let pairs = [];
+  const seen = new Set();
+  data.forEach(row => {
+    const key = `${row.lastname}|${row.hour}`;
+    if (row.lastname && row.hour && !seen.has(key)) {
+      pairs.push({ lastname: row.lastname, hour: row.hour });
+      seen.add(key);
+    }
+  });
+  pairs.sort((a, b) => {
+    const nameCompare = a.lastname.localeCompare(b.lastname);
+    if (nameCompare !== 0) return nameCompare;
+    return a.hour.localeCompare(b.hour);
+  });
+  let $dropdown = $("#change-hour-student").empty();
+  $dropdown.append('<option value="">Select Student</option>');
+  pairs.forEach(pair => {
+    $dropdown.append(
+      `<option value="${pair.lastname}|${pair.hour}">${pair.lastname} (${pair.hour})</option>`
+    );
+  });
+}
 $(function () {
   loadHours();
   loadAllStudentsWithHour();
 });
-// Load student names when page loads
-$(function () {
-  loadHours();
-});
+
 $("#add-points-hour").on("change", function() {
   const hour = $(this).val();
   loadStudentNamesForHour(hour);
