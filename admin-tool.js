@@ -142,7 +142,6 @@ $("#change-hour-btn").click(async function () {
   .select('id, lastname, hour')
   .eq('lastname', name)
   .eq('hour', oldHour);
-  .select();
 console.log('Matching rows before update:', check.data);
   console.log('ChangeHour Attempt:', { name, oldHour, newHour });
   if (!name || !oldHour || !newHour) return showMessage("Need student and both hours.", "red");
