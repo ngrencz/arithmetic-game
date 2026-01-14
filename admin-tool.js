@@ -13,7 +13,16 @@ async function loadHours() {
     .from('scores')
     .select('hour');
   if (error) return showMessage("Could not fetch hours", "red");
-  const hours = [...new Set(data.map(row => row.hour).filter(h => h))];
+  let hours = [...new Set(data.map(row => row.hour).filter(h => h))];
+  // Sort hours (alphabetically; for numbers, add custom logic!)
+  hours = hours.sort((a, b) => {
+    // If hours are numbers, sort numerically.
+    // If mixed, sort alphabetically.
+    const numA = parseInt(a);
+    const numB = parseInt(b);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return a.localeCompare(b);
+  });
   $("#hour-select").empty();
   hours.forEach(hour => {
     $("#hour-select").append(`<option value="${hour}">${hour}</option>`);
