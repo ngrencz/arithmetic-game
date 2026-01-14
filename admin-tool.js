@@ -1,7 +1,7 @@
 // --- Supabase Setup ---
 const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const adminSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function showMessage(msg, color="green") {
   $("#admin-message").css("color", color).text(msg).fadeIn().delay(1800).fadeOut();
@@ -9,7 +9,7 @@ function showMessage(msg, color="green") {
 
 // 1. Populate hour dropdown, then load students & points for that hour
 async function loadHours() {
-  const { data, error } = await supabase
+  const { data, error } = await adminSupabase
     .from('scores')
     .select('hour');
   if (error) return showMessage("Could not fetch hours", "red");
@@ -23,7 +23,7 @@ async function loadHours() {
 // Show table of students/points for selected hour
 $("#refresh-list").click(async function () {
   const hour = $("#hour-select").val();
-  const { data, error } = await supabase
+  const { data, error } = await adminSupabase
     .from('scores')
     .select('lastname, points')
     .eq('hour', hour);
@@ -48,7 +48,7 @@ $("#add-points-btn").click(async function () {
   const points = parseInt($("#add-points-amount").val()) || 1;
   if (!name || !hour || !gameType) return showMessage("Missing info to add points.", "red");
   // Insert dummy "score" to add points
-  const { error } = await supabase
+  const { error } = await adminSupabase
     .from('scores')
     .insert([{lastname: name, hour, game_type: gameType, score: 0, points}]);
   showMessage(error ? "Error adding points." : "Points added!");
@@ -60,7 +60,7 @@ $("#change-hour-btn").click(async function () {
   const oldHour = $("#change-hour-old-hour").val().trim();
   const newHour = $("#change-hour-new-hour").val().trim();
   if (!name || !oldHour || !newHour) return showMessage("Need name, both hours.", "red");
-  const { error, data } = await supabase
+  const { error, data } = await adminSupabase
     .from('scores')
     .update({hour: newHour})
     .eq('lastname', name)
@@ -73,7 +73,7 @@ $("#add-student-btn").click(async function () {
   const name = $("#add-student-name").val().trim();
   if (!name) return showMessage("Please enter a name.", "red");
   // Add with empty hour/game_type/0 scores/points as dummy entry
-  const { error } = await supabase
+  const { error } = await adminSupabase
     .from('scores')
     .insert([{lastname: name, hour: '', game_type: '', score: 0, points: 0}]);
   showMessage(error ? "Error adding student." : "Student added!");
@@ -84,7 +84,7 @@ $("#change-name-btn").click(async function () {
   const oldName = $("#name-old").val().trim();
   const newName = $("#name-new").val().trim();
   if (!oldName || !newName) return showMessage("Need old and new names.", "red");
-  const { error, data } = await supabase
+  const { error, data } = await adminSupabase
     .from('scores')
     .update({lastname: newName})
     .eq('lastname', oldName);
@@ -94,7 +94,7 @@ $("#change-name-btn").click(async function () {
 // 6. Find names with ≤ 2 entries
 $("#find-low-count-btn").click(async function () {
   $("#low-count-list").empty().append('<li>Loading...</li>');
-  const { data, error } = await supabase.from('scores').select('lastname');
+  const { data, error } = await adminSupabase.from('scores').select('lastname');
   if (error) return showMessage("Could not load names.", "red");
   const nameCounts = {};
   data.forEach(row => {
