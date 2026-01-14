@@ -48,7 +48,7 @@ async function loadAllStudentsWithHour() {
   $dropdown.append('<option value="">Select Student</option>');
   pairs.forEach(pair => {
     $dropdown.append(
-      `<option value="${pair.lastname}|${pair.hour}">${pair.lastname} (${pair.hour})</option>`
+      `<option value="${pair.lastname}" data-hour="${pair.hour}">${pair.lastname}</option>`
     );
   });
 }
@@ -62,9 +62,8 @@ $("#add-points-hour").on("change", function() {
   loadStudentNamesForHour(hour);
 });
 $("#change-hour-student").on("change", function() {
-  const selection = $(this).val();
-  const parts = selection.split("|");
-  const selectedHour = parts.length > 1 ? parts[1] : "";
+  const $selectedOption = $("#change-hour-student option:selected");
+  const selectedHour = $selectedOption.data("hour");
   $("#change-hour-old-hour").val(selectedHour);
 });
 function showMessage(msg, color="green") {
