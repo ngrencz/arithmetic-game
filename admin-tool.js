@@ -3,11 +3,17 @@ const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const adminSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function loadStudentNames() {
-  // Gather all distinct names from scores
+async function loadStudentNamesForHour(hour) {
+  if (!hour) {
+    // If no hour is selected, clear dropdown
+    let $dropdown = $("#add-points-name").empty();
+    $dropdown.append('<option value="">Select Student</option>');
+    return;
+  }
   const { data, error } = await adminSupabase
     .from('scores')
     .select('lastname')
+    .eq('hour', hour);
   if (error) return showMessage("Could not fetch names", "red");
   let names = [...new Set(data.map(row => row.lastname).filter(n => n && n.trim() !== ""))];
   names.sort((a, b) => a.localeCompare(b));
@@ -21,7 +27,10 @@ async function loadStudentNames() {
 // Load student names when page loads
 $(function () {
   loadHours();
-  loadStudentNames();
+});
+$("#add-points-hour").on("change", function() {
+  const hour = $(this).val();
+  loadStudentNamesForHour(hour);
 });
 
 function showMessage(msg, color="green") {
