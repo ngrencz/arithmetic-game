@@ -137,12 +137,14 @@ $("#change-hour-btn").click(async function () {
   const name = parts[0];
   const oldHour = $("#change-hour-old-hour").val();
   const newHour = $("#change-hour-new-hour").val();
+  console.log('ChangeHour Attempt:', { name, oldHour, newHour });
   if (!name || !oldHour || !newHour) return showMessage("Need student and both hours.", "red");
   const { error, data } = await adminSupabase
     .from('scores')
     .update({hour: newHour})
     .eq('lastname', name)
     .eq('hour', oldHour);
+  console.log('Supabase Update Result:', { error, data });
   showMessage(error ? "Error changing hour." : `Hour updated! ${data?.length || 'No'} rows modified.`);
   // Optionally reload student list to reflect changes:
   loadAllStudentsWithHour();
