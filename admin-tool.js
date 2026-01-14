@@ -3,6 +3,27 @@ const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const adminSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+async function loadStudentNames() {
+  // Gather all distinct names from scores
+  const { data, error } = await adminSupabase
+    .from('scores')
+    .select('lastname')
+  if (error) return showMessage("Could not fetch names", "red");
+  let names = [...new Set(data.map(row => row.lastname).filter(n => n && n.trim() !== ""))];
+  names.sort((a, b) => a.localeCompare(b));
+  let $dropdown = $("#add-points-name").empty();
+  $dropdown.append('<option value="">Select Student</option>');
+  names.forEach(name => {
+    $dropdown.append(`<option value="${name}">${name}</option>`);
+  });
+}
+
+// Load student names when page loads
+$(function () {
+  loadHours();
+  loadStudentNames();
+});
+
 function showMessage(msg, color="green") {
   $("#admin-message").css("color", color).text(msg).fadeIn().delay(1800).fadeOut();
 }
