@@ -149,7 +149,7 @@ console.log('Matching rows before update:', check.data);
     .from('scores')
     .update({hour: newHour})
     .eq('lastname', name)
-    .eq('hour', oldHour);
+    .eq('hour', oldHour)
     .select();
   console.log('Supabase Update Result:', { error, data });
   showMessage(error ? "Error changing hour." : `Hour updated! ${data?.length || 'No'} rows modified.`);
