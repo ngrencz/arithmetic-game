@@ -192,8 +192,3 @@ $("#find-low-count-btn").click(async function () {
   }
   showMessage("Low-count names checked.", "blue");
 });
-
-// On page load, load all available hours
-$(function () {
-  loadHours();
-});
