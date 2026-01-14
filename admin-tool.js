@@ -159,12 +159,15 @@ console.log('Matching rows before update:', check.data);
 // 4. Add student (insert into scores for login)
 $("#add-student-btn").click(async function () {
   const name = $("#add-student-name").val().trim();
-  if (!name) return showMessage("Please enter a name.", "red");
-  // Add with empty hour/game_type/0 scores/points as dummy entry
+  const hour = $("#add-student-hour").val();
+  if (!name || !hour) return showMessage("Please enter both name and hour.", "red");
+  // Add initial entry for this student and hour only
   const { error } = await adminSupabase
     .from('scores')
-    .insert([{lastname: name, hour: '', game_type: '', score: 0, points: 0}]);
+    .insert([{lastname: name, hour, game_type: '', score: 0, points: 0}]);
   showMessage(error ? "Error adding student." : "Student added!");
+  // Optionally, refresh your lists:
+  loadAllStudentsWithHour();
 });
 
 // 5. Change student name everywhere (update all scores for old name)
