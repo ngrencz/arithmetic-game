@@ -63,8 +63,11 @@ $("#refresh-list").click(async function () {
   data.forEach(row => {
     table[row.lastname] = (table[row.lastname] || 0) + (row.points || 0);
   });
-  const $tbody = $("#hour-table tbody").empty();
-  Object.entries(table).forEach(([name, points]) => {
+  
+const $tbody = $("#hour-table tbody").empty();
+Object.entries(table)
+  .sort((a, b) => a[0].localeCompare(b[0]))
+  .forEach(([name, points]) => {
     $tbody.append(`<tr><td>${name}</td><td>${points}</td></tr>`);
   });
   showMessage("Hour table updated.", "green");
