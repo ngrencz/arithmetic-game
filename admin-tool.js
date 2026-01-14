@@ -10,6 +10,36 @@ async function loadStudentNamesForHour(hour) {
     $dropdown.append('<option value="">Select Student</option>');
     return;
   }
+  async function loadAllStudentsWithHour() {
+  const { data, error } = await adminSupabase
+    .from('scores')
+    .select('lastname, hour')
+  if (error) return showMessage("Could not fetch students", "red");
+  // Show only unique [name, hour] pairs
+  let pairs = [];
+  const seen = new Set();
+  data.forEach(row => {
+    const key = `${row.lastname}|${row.hour}`;
+    if (row.lastname && row.hour && !seen.has(key)) {
+      pairs.push({ lastname: row.lastname, hour: row.hour });
+      seen.add(key);
+    }
+  });
+  pairs.sort((a, b) => {
+    // Sort by lastname, then hour
+    const nameCompare = a.lastname.localeCompare(b.lastname);
+    if (nameCompare !== 0) return nameCompare;
+    return a.hour.localeCompare(b.hour);
+  });
+  let $dropdown = $("#change-hour-student").empty();
+  $dropdown.append('<option value="">Select Student</option>');
+  pairs.forEach(pair => {
+    $dropdown.append(
+      `<option value="${pair.lastname}|${pair.hour}">${pair.lastname} (${pair.hour})</option>`
+    );
+  });
+}
+  
   const { data, error } = await adminSupabase
     .from('scores')
     .select('lastname')
@@ -23,7 +53,10 @@ async function loadStudentNamesForHour(hour) {
     $dropdown.append(`<option value="${name}">${name}</option>`);
   });
 }
-
+$(function () {
+  loadHours();
+  loadAllStudentsWithHour();
+});
 // Load student names when page loads
 $(function () {
   loadHours();
@@ -32,7 +65,12 @@ $("#add-points-hour").on("change", function() {
   const hour = $(this).val();
   loadStudentNamesForHour(hour);
 });
-
+$("#change-hour-student").on("change", function() {
+  const selection = $(this).val();
+  const parts = selection.split("|");
+  const selectedHour = parts.length > 1 ? parts[1] : "";
+  $("#change-hour-old-hour").val(selectedHour);
+});
 function showMessage(msg, color="green") {
   $("#admin-message").css("color", color).text(msg).fadeIn().delay(1800).fadeOut();
 }
@@ -98,16 +136,20 @@ $("#add-points-btn").click(async function () {
 
 // 3. Change a student's hour (all scores under old hour get new hour)
 $("#change-hour-btn").click(async function () {
-  const name = $("#change-hour-name").val().trim();
-  const oldHour = $("#change-hour-old-hour").val().trim();
-  const newHour = $("#change-hour-new-hour").val().trim();
-  if (!name || !oldHour || !newHour) return showMessage("Need name, both hours.", "red");
+  const selection = $("#change-hour-student").val();
+  const parts = selection.split("|");
+  const name = parts[0];
+  const oldHour = $("#change-hour-old-hour").val();
+  const newHour = $("#change-hour-new-hour").val();
+  if (!name || !oldHour || !newHour) return showMessage("Need student and both hours.", "red");
   const { error, data } = await adminSupabase
     .from('scores')
     .update({hour: newHour})
     .eq('lastname', name)
     .eq('hour', oldHour);
   showMessage(error ? "Error changing hour." : `Hour updated! ${data?.length || 'No'} rows modified.`);
+  // Optionally reload student list to reflect changes:
+  loadAllStudentsWithHour();
 });
 
 // 4. Add student (insert into scores for login)
