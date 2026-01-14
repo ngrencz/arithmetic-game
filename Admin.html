@@ -59,38 +59,40 @@
 </div>
 
   <div class="card-box">
-    <!-- 3. Change Hour for a Student -->
-    <section>
-      <h2>Change Hour for Student</h2>
-      <input type="text" id="change-hour-name" placeholder="Student Name">
-      <label for="change-hour-old-hour">Old Hour:</label>
-      <select id="change-hour-old-hour">
-         <option value="">Select Hour</option>
-         <option value="00">Hour 00</option>
-         <option value="01">Hour 01</option>
-         <option value="02">Hour 02</option>
-         <option value="03">Hour 03</option>
-         <option value="04">Hour 04</option>
-         <option value="05">Hour 05</option>
-         <option value="06">Hour 06</option>
-         <option value="07">Hour 07</option>
-       </select>
-
-       <label for="change-hour-new-hour">New Hour:</label>
-       <select id="change-hour-new-hour">
-         <option value="">Select Hour</option>
-         <option value="00">Hour 00</option>
-         <option value="01">Hour 01</option>
-         <option value="02">Hour 02</option>
-         <option value="03">Hour 03</option>
-         <option value="04">Hour 04</option>
-         <option value="05">Hour 05</option>
-         <option value="06">Hour 06</option>
-         <option value="07">Hour 07</option>
-</select>
-      <button id="change-hour-btn">Change Hour</button>
-    </section>
-  </div>
+  <section>
+    <h2>Change Hour for Student</h2>
+    <label for="change-hour-student">Student:</label>
+    <select id="change-hour-student">
+      <option value="">Select Student</option>
+      <!-- filled by JS -->
+    </select>
+    <label for="change-hour-old-hour">Current Hour:</label>
+    <select id="change-hour-old-hour" disabled>
+      <option value="">Hour</option>
+      <option value="00">Hour 00</option>
+      <option value="01">Hour 01</option>
+      <option value="02">Hour 02</option>
+      <option value="03">Hour 03</option>
+      <option value="04">Hour 04</option>
+      <option value="05">Hour 05</option>
+      <option value="06">Hour 06</option>
+      <option value="07">Hour 07</option>
+    </select>
+    <label for="change-hour-new-hour">New Hour:</label>
+    <select id="change-hour-new-hour">
+      <option value="">Select New Hour</option>
+      <option value="00">Hour 00</option>
+      <option value="01">Hour 01</option>
+      <option value="02">Hour 02</option>
+      <option value="03">Hour 03</option>
+      <option value="04">Hour 04</option>
+      <option value="05">Hour 05</option>
+      <option value="06">Hour 06</option>
+      <option value="07">Hour 07</option>
+    </select>
+    <button id="change-hour-btn">Change Hour</button>
+  </section>
+</div>
 
   <div class="card-box">
     <!-- 4. Add a student -->
