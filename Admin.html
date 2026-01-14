@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Math Game Admin Tool</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>Math Game Admin Console</h1>
+
+    <!-- 1. Select Hour and List Points -->
+    <section>
+      <h2>View Hour: All Student Points</h2>
+      <label for="hour-select">Hour:</label>
+      <select id="hour-select"></select>
+      <button id="refresh-list">Show Points</button>
+      <table id="hour-table" class="admin-table">
+        <thead>
+          <tr><th>Name</th><th>Points</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- 2. Add Points to Student -->
+    <section>
+      <h2>Manually Add Points</h2>
+      <input type="text" id="add-points-name" placeholder="Student Name">
+      <input type="text" id="add-points-hour" placeholder="Hour">
+      <input type="text" id="add-points-game-type" placeholder="Game Type">
+      <input type="number" id="add-points-amount" placeholder="Points" min="1" max="50" value="1">
+      <button id="add-points-btn">Add Points</button>
+    </section>
+
+    <!-- 3. Change Hour for a Student -->
+    <section>
+      <h2>Change Hour for Student</h2>
+      <input type="text" id="change-hour-name" placeholder="Student Name">
+      <input type="text" id="change-hour-old-hour" placeholder="Old Hour">
+      <input type="text" id="change-hour-new-hour" placeholder="New Hour">
+      <button id="change-hour-btn">Change Hour</button>
+    </section>
+
+    <!-- 4. Add a student -->
+    <section>
+      <h2>Add Student</h2>
+      <input type="text" id="add-student-name" placeholder="Student Name">
+      <button id="add-student-btn">Add Student</button>
+    </section>
+
+    <!-- 5. Change student name -->
+    <section>
+      <h2>Change Student Name (Everywhere)</h2>
+      <input type="text" id="name-old" placeholder="Old Name">
+      <input type="text" id="name-new" placeholder="New Name">
+      <button id="change-name-btn">Change Name Everywhere</button>
+    </section>
+
+    <!-- 6. Find Names with ≤ 2 Entries -->
+    <section>
+      <h2>Students With ≤ 2 Entries</h2>
+      <button id="find-low-count-btn">Find Names</button>
+      <ul id="low-count-list"></ul>
+    </section>
+
+    <div id="admin-message" style="color: green; margin-top: 16px;"></div>
+  </div>
+
+  <script src="admin-tool.js"></script>
+</body>
+</html>
