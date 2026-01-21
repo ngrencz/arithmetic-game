@@ -92,6 +92,91 @@ async function loadHours() {
   });
 }
 
+// Weekly Participation report
+async function generateWeeklyParticipationReport() {
+  const weekStartInput = document.getElementById('week-start-date').value;
+  if (!weekStartInput) {
+    return showMessage("Please select a week start date (Monday).", "red");
+  }
+  const weekStart = new Date(weekStartInput);
+  // Ensure weekStart is Monday; if not, adjust to previous Monday
+  const day = weekStart.getDay();
+  const diffToMonday = (day + 6) % 7; // 0=Sun, 1=Mon, etc.
+  weekStart.setDate(weekStart.getDate() - diffToMonday);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 4); // Friday
+
+  // Format dates to ISO strings for Supabase query (start of Monday, end of Friday)
+  const startISO = new Date(weekStart.setHours(0,0,0,0)).toISOString();
+  const endISO = new Date(weekEnd.setHours(23,59,59,999)).toISOString();
+
+  // Fetch all student-hour pairs (reuse existing method or query distinct)
+  const { data: allStudents, error: allStudentsError } = await adminSupabase
+    .from('scores')
+    .select('lastname, hour')
+    .neq('lastname', null);
+
+  if (allStudentsError) {
+    return showMessage("Error fetching students: " + allStudentsError.message, "red");
+  }
+
+  // Create unique student-hour pairs
+  const studentHourSet = new Map();
+  allStudents.forEach(({lastname, hour}) => {
+    if (lastname && hour) {
+      const key = lastname + '|' + hour;
+      studentHourSet.set(key, {lastname, hour});
+    }
+  });
+
+  // Fetch all play entries in the week
+  const { data: plays, error: playsError } = await adminSupabase
+  .from('scores')
+  .select('lastname, hour, created_at, game_type')
+  .gte('created_at', startISO)
+  .lte('created_at', endISO)
+  .not('game_type', 'in', `('bonus','redeem','')`);
+
+  if (playsError) {
+    return showMessage("Error fetching plays: " + playsError.message, "red");
+  }
+
+  // Prepare a map: {student|hour} => Set of day numbers (1=Monday,...,5=Friday) they played
+  const participationMap = new Map();
+  plays.forEach(({lastname, hour, created_at}) => {
+    if (!lastname || !hour || !created_at) return;
+    const key = lastname + '|' + hour;
+    const date = new Date(created_at);
+    // Calculate day of week relative to Monday (1..5)
+    const dayOfWeek = ((date.getDay() + 6) % 7) + 1;
+    if (dayOfWeek < 1 || dayOfWeek > 5) return; // outside Mon-Fri
+    if (!participationMap.has(key)) participationMap.set(key, new Set());
+    participationMap.get(key).add(dayOfWeek);
+  });
+
+  // For each student-hour, identify missing days
+  const allWeekDays = [1,2,3,4,5]; // Monday to Friday
+  let reportHTML = '<h4>Weekly Participation Report</h4>';
+  reportHTML += '<table border="1" cellpadding="5"><tr><th>Hour</th><th>Student</th><th>Missing Days</th></tr>';
+
+  studentHourSet.forEach(({lastname, hour}, key) => {
+    const playedDays = participationMap.get(key) || new Set();
+    const missingDays = allWeekDays.filter(d => !playedDays.has(d))
+      .map(d => ['Mon','Tue','Wed','Thu','Fri'][d-1]);
+    if (missingDays.length > 0) {
+      reportHTML += `<tr><td>\${hour}</td><td>\${lastname}</td><td>\${missingDays.join(', ')}</td></tr>`;
+    }
+  });
+
+  reportHTML += '</table>';
+
+  document.getElementById('weekly-report').innerHTML = reportHTML;
+  showMessage("Weekly report generated.", "green");
+}
+
+// Hook up button
+document.getElementById('generate-weekly-report').addEventListener('click', generateWeeklyParticipationReport);
+
 // Show table of students/points for selected hour
 $("#refresh-list").click(async function () {
   const hour = $("#hour-select").val();
