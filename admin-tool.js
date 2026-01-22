@@ -135,7 +135,7 @@ async function generateWeeklyParticipationReport() {
   .select('lastname, hour, created_at, game_type')
   .gte('created_at', startISO)
   .lte('created_at', endISO)
-  .not('game_type', 'in', `('bonus','redeem','')`);
+  .not('game_type', 'in', `['bonus','redeem','']`);
 
   if (playsError) {
     return showMessage("Error fetching plays: " + playsError.message, "red");
@@ -164,7 +164,7 @@ async function generateWeeklyParticipationReport() {
     const missingDays = allWeekDays.filter(d => !playedDays.has(d))
       .map(d => ['Mon','Tue','Wed','Thu','Fri'][d-1]);
     if (missingDays.length > 0) {
-      reportHTML += `<tr><td>\${hour}</td><td>\${lastname}</td><td>\${missingDays.join(', ')}</td></tr>`;
+      reportHTML += `<tr><td>${hour}</td><td>${lastname}</td><td>${missingDays.join(', ')}</td></tr>`;
     }
   });
 
