@@ -134,17 +134,30 @@
     </section>
   </div>
   
-  <div class="card-box">
-    <!-- 7. Weekly Report -->
-    <section>
-      <h2>Weekly Participation Report</h2>
-      <label for="week-start-date">Select Week (Monday):</label>
-      <input type="date" id="week-start-date" />
-      <button id="generate-weekly-report">Generate Report</button>
+<div class="card-box">
+  <section>
+    <h2>Weekly Participation Report</h2>
+    <!-- Added Hour Selector -->
+    <label for="report-hour-select">Hour:</label>
+    <select id="report-hour-select">
+      <option value="">All Hours</option>
+      <option value="00">Hour 00</option>
+      <option value="01">Hour 01</option>
+      <option value="02">Hour 02</option>
+      <option value="03">Hour 03</option>
+      <option value="04">Hour 04</option>
+      <option value="05">Hour 05</option>
+      <option value="06">Hour 06</option>
+      <option value="07">Hour 07</option>
+    </select>
 
-      <div id="weekly-report"></div>
-    </section>
-  </div>
+    <label for="week-start-date">Select Week (Monday):</label>
+    <input type="date" id="week-start-date" />
+    <button id="generate-weekly-report">Generate Report</button>
+
+    <div id="weekly-report"></div>
+  </section>
+</div>
   
   <div class="card-box">
     <div id="admin-message" style="color: green; margin-top: 16px;"></div>
