@@ -136,7 +136,6 @@ async function generateWeeklyParticipationReport() {
   .gte('created_at', startISO)
   .lte('created_at', endISO)
   .not('game_type', 'in', ['bonus','redeem'])
-  .neq('game_type', '')
   .not('game_type', 'is', null);
 
   if (playsError) {
