@@ -115,6 +115,9 @@ async function generateWeeklyParticipationReport() {
     .from('scores')
     .select('lastname, hour')
     .neq('lastname', null);
+    .order('hour', { ascending: true })     // Primary sort
+    .order('lastname', { ascending: true }); // Secondary sort (alphabetical)
+    
 
   if (allStudentsError) {
     return showMessage("Error fetching students: " + allStudentsError.message, "red");
