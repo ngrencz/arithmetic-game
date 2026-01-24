@@ -94,7 +94,6 @@ async function loadHours() {
 
 // Weekly Participation report
 async function generateWeeklyParticipationReport() {
-  // 1. Get the UI inputs
   const weekStartInput = document.getElementById('week-start-date').value;
   const selectedHour = document.getElementById('report-hour-select').value; 
 
@@ -102,19 +101,16 @@ async function generateWeeklyParticipationReport() {
     return showMessage("Please select a week start date (Monday).", "red");
   }
 
-  // 2. Calculate the date range (Monday to Friday)
-  const weekStart = new Date(weekStartInput);
-  const day = weekStart.getDay();
-  const diffToMonday = (day + 6) % 7; 
-  weekStart.setDate(weekStart.getDate() - diffToMonday);
-  
+  // 1. Calculate Date Range (Force to UTC to prevent shifting)
+  const weekStart = new Date(weekStartInput + "T00:00:00Z"); // Force UTC start
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 4); 
+  weekEnd.setUTCDate(weekStart.getUTCDate() + 4); // Friday
 
-  const startISO = new Date(weekStart.setHours(0,0,0,0)).toISOString();
-  const endISO = new Date(weekEnd.setHours(23,59,59,999)).toISOString();
+  const startISO = weekStart.toISOString();
+  // Set endISO to the very end of Friday UTC
+  const endISO = new Date(weekEnd).toISOString().split('T')[0] + "T23:59:59.999Z";
 
-  // 3. FETCH STUDENT LIST (with Hour filter and Sorting)
+  // 2. Fetch Student List
   let studentQuery = adminSupabase
     .from('scores')
     .select('lastname, hour')
@@ -128,11 +124,8 @@ async function generateWeeklyParticipationReport() {
     .order('hour', { ascending: true })
     .order('lastname', { ascending: true });
 
-  if (allStudentsError) {
-    return showMessage("Error fetching students: " + allStudentsError.message, "red");
-  }
+  if (allStudentsError) return showMessage("Error: " + allStudentsError.message, "red");
 
-  // Create unique student-hour pairs from the sorted result
   const studentHourSet = new Map();
   allStudents.forEach(({lastname, hour}) => {
     if (lastname && hour) {
@@ -141,7 +134,7 @@ async function generateWeeklyParticipationReport() {
     }
   });
 
-  // 4. FETCH PLAY ENTRIES (with Hour filter and Exclusions)
+  // 3. Fetch Play Entries
   let playsQuery = adminSupabase
     .from('scores')
     .select('lastname, hour, created_at, game_type')
@@ -154,44 +147,51 @@ async function generateWeeklyParticipationReport() {
   }
 
   const { data: plays, error: playsError } = await playsQuery;
+  if (playsError) return showMessage("Error: " + playsError.message, "red");
 
-  if (playsError) {
-    return showMessage("Error fetching plays: " + playsError.message, "red");
-  }
-
-  // 5. Map the results for the table
+  // 4. Map Participation using UTC Days
   const participationMap = new Map();
   plays.forEach(({lastname, hour, created_at}) => {
     if (!lastname || !hour || !created_at) return;
     const key = lastname + '|' + hour;
+    
     const date = new Date(created_at);
-    const dayOfWeek = ((date.getDay() + 6) % 7) + 1;
-    if (dayOfWeek < 1 || dayOfWeek > 5) return; 
+    // Use getUTCDay: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+    const dayOfWeek = date.getUTCDay();
+    
+    if (dayOfWeek < 1 || dayOfWeek > 5) return; // Skip weekends
+    
     if (!participationMap.has(key)) participationMap.set(key, new Set());
     participationMap.get(key).add(dayOfWeek);
   });
 
-  // 6. Build the Report HTML
-  const allWeekDays = [1,2,3,4,5]; 
+  // 5. Build HTML Table
+  const allWeekDays = [1, 2, 3, 4, 5]; // Mon, Tue, Wed, Thu, Fri
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
   let reportHTML = '<h4>Weekly Participation Report</h4>';
   reportHTML += '<table border="1" cellpadding="5"><tr><th>Hour</th><th>Student</th><th>Missing Days</th></tr>';
 
   studentHourSet.forEach(({lastname, hour}, key) => {
-    const playedDays = participationMap.get(key) || new Set();
-    const missingDays = allWeekDays.filter(d => !playedDays.has(d))
-      .map(d => ['Mon','Tue','Wed','Thu','Fri'][d-1]);
+    const playedDayNumbers = participationMap.get(key) || new Set();
     
+    // Find which days from [1,2,3,4,5] are NOT in the playedDayNumbers set
+    const missingDays = allWeekDays
+      .filter(d => !playedDayNumbers.has(d))
+      .map(d => dayNames[d]);
+
     if (missingDays.length > 0) {
       reportHTML += `<tr><td>${hour}</td><td>${lastname}</td><td>${missingDays.join(', ')}</td></tr>`;
+    } else {
+      // Optional: Show "None" or "Complete" if you want to see everyone
+      // reportHTML += `<tr><td>${hour}</td><td>${lastname}</td><td style="color:green;">Complete</td></tr>`;
     }
   });
 
   reportHTML += '</table>';
-
   document.getElementById('weekly-report').innerHTML = reportHTML;
   showMessage("Weekly report generated.", "green");
 }
-
 // Hook up button
 document.getElementById('generate-weekly-report').addEventListener('click', generateWeeklyParticipationReport);
 
