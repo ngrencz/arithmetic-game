@@ -135,7 +135,7 @@ async function generateWeeklyParticipationReport() {
   .select('lastname, hour, created_at, game_type')
   .gte('created_at', startISO)
   .lte('created_at', endISO)
-  .not('game_type', 'in', `['bonus','redeem','']`);
+  .not('game_type', 'in', ['bonus','redeem','']);
 
   if (playsError) {
     return showMessage("Error fetching plays: " + playsError.message, "red");
