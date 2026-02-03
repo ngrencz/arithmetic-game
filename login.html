@@ -85,7 +85,7 @@
       errBox.textContent = '';
 
       // Validate
-      if (lastname.length < 2 || !/^[a-zA-Z\-\' ]+$/.test(lastname)) {
+      if (lastname.length < 2 || !/^[a-zA-Z0-5\-\' ]+$/.test(lastname)) {
         errBox.textContent = "Please enter your last name.";
         return;
       }
