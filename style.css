@@ -190,7 +190,24 @@ body {
   background: #03793A; 
   transition: background 0.2s, outline 0.2s;
 }
+.level-btn {
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin: 5px;
+    border-radius: 8px;
+    border: 2px solid #333;
+    background-color: #f0f0f0;
+    transition: transform 0.1s;
+}
 
+.level-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.level-btn:active {
+    transform: scale(0.95);
+}
 .menu-bar button.active {
   background: #05B25A;   
   outline: 2px solid #03A850;
