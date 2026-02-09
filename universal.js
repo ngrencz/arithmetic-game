@@ -17,7 +17,7 @@ let gameType =
 
 // --- Game settings by type ---
 let options = {
-    add: false, sub: false, mul: false, div: false,
+    add: false, sub: false, mul: false, div: false, sqrt: false,
     add_left_min: 2, add_left_max: 12, add_right_min: 2, add_right_max: 12,
     mul_left_min: 2, mul_left_max: 12, mul_right_min: 2, mul_right_max: 12,
     duration: 180
@@ -29,6 +29,7 @@ switch(gameType) {
     case "multiplication": options.mul = true; break;
     case "division": options.div = true; break;
     case "exponents": options.exp = true; break; 
+    case "roots":options.sqrt = true; break;
 }
 async function fetchTotalPoints(lastname, hour) {
   if (!lastname || !hour) return 0;
@@ -187,6 +188,15 @@ function init(options) {
         for(let i=0; i<exponent; i++) result *= base;
         return result;
     }
+  function pg_sqrt() {
+    const root = rand(12) + 2; // Returns a root between 2 and 14
+    const square = root * root;
+    return { 
+        prettyProblem: '√' + square, 
+        plainProblem: 'sqrt(' + square + ')', 
+        answer: root 
+      };
+    }
     function formatSuperscript(n) {
         const sup = {0:"⁰",1:"¹",2:"²",3:"³",4:"⁴",5:"⁵"};
         return n.toString().split('').map(d=>sup[d]||d).join('');
@@ -208,6 +218,7 @@ function init(options) {
     if (options.mul) pgs.push(pg_mul);
     if (options.div) pgs.push(pg_div);
     if (options.exp) pgs.push(pg_exp);
+    if (options.sqrt) pgs.push(pg_sqrt);
 
     function problemGen() {
         let genned;
