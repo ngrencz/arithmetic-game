@@ -7,23 +7,27 @@
 </head>
 <body>
   <div id="game">
-    <span class="left">
-    Seconds left: <span class="seconds"></span>
-    </span>
-    <span class="correct">Score: 0</span>
-    <div class="banner">
-      <div class="start">
-        <span class="problem">0 + 0</span> =
-        <input class="answer" autocomplete="off">
-      </div>
-      <div class="end" style="display: none;">
-        <p class="correct">Score: 0</p>
-        <p>
-          <a href="" id="try-again">Try again</a>
-        </p>
-      </div>
+  <span class="left"></span>
+  <span class="correct">Score: 0</span>
+
+  <div class="banner">
+    <div id="level-select">
+      <h2>Choose Your Level</h2>
+      <button class="level-btn" data-level="1">Level 1 (Basic)</button>
+      <button class="level-btn" data-level="2">Level 2 (Advanced)</button>
+    </div>
+
+    <div class="start" style="display: none;">
+      <span class="problem">0 + 0</span> =
+      <input class="answer" autocomplete="off">
+    </div>
+
+    <div class="end" style="display: none;">
+      <p class="correct">Score: 0</p>
+      <p><a href="" id="try-again">Try again</a></p>
     </div>
   </div>
+</div>
   <!-- Supabase loader - must come first -->
   <script type="module">
     import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
