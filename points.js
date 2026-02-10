@@ -49,10 +49,11 @@ async function showUserInfo() {
     const userInfoDiv = document.getElementById('user-info');
     if (!userInfoDiv) return;
 
-    const { data } = await supabase.from('scores').select('game_type, score, points').eq('lastname', lastname).eq('hour', hour);
+    const { data, error } = await supabase.from('scores').select('game_type, score, points').eq('lastname', lastname).eq('hour', hour);
+    if (error) console.error("Error fetching User Info:", error);
+
     const points = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
     
-    // Update balance display in the redeem box if it exists
     const msgBox = document.getElementById('redeem-message');
     if (msgBox) msgBox.innerHTML = `Balance: <strong>${points}</strong>`;
 
@@ -86,13 +87,12 @@ async function showUserInfo() {
 
 // --- 3. LEADERBOARD SYSTEM ---
 async function renderLeaderboard(gameType, scope) {
+    const contentDiv = document.getElementById('leaderboard-content');
     const menuBar = document.getElementById('menu-bar');
     const submenuBar = document.getElementById('submenu-bar');
-    const contentDiv = document.getElementById('leaderboard-content');
+    if (!contentDiv) return;
 
-    if (!menuBar || !submenuBar || !contentDiv) return;
-
-    // Build Game Menu
+    // Build Menus First
     menuBar.innerHTML = '';
     gameTypes.forEach(g => {
         const btn = document.createElement('button');
@@ -102,7 +102,6 @@ async function renderLeaderboard(gameType, scope) {
         menuBar.appendChild(btn);
     });
 
-    // Build Scope Menu
     submenuBar.innerHTML = '';
     scopeTypes.forEach(s => {
         const btn = document.createElement('button');
@@ -112,28 +111,29 @@ async function renderLeaderboard(gameType, scope) {
         submenuBar.appendChild(btn);
     });
 
-    // Difficulty Toggle HTML
     const levelToggleHtml = `
         <div style="text-align:right; margin-bottom:10px;">
             <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
-            <button class="${currentLevel === 1 ? 'active' : ''}" id="btn-lvl1">Level 1</button>
-            <button class="${currentLevel === 2 ? 'active' : ''}" id="btn-lvl2">Level 2</button>
+            <button id="set-lvl1" class="lvl-btn ${currentLevel === 1 ? 'active' : ''}">Level 1</button>
+            <button id="set-lvl2" class="lvl-btn ${currentLevel === 2 ? 'active' : ''}" style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : ''}">Level 2</button>
         </div>`;
 
     contentDiv.innerHTML = levelToggleHtml + "<p>Loading Leaderboard...</p>";
 
-    // Attach Toggle Listeners
-    document.getElementById('btn-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
-    document.getElementById('btn-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
+    // Re-attach Toggle Listeners immediately
+    document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
+    document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 
     const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
     let qb = supabase.from('scores').select('lastname, hour, score').eq('game_type', dbType);
     if (scope === "class") qb = qb.eq('hour', hour);
 
-    const { data } = await qb;
+    const { data, error } = await qb;
+    if (error) console.error("Leaderboard Error:", error);
+
     let tableHtml = levelToggleHtml;
 
-    if (!data || !data.length) {
+    if (!data || data.length === 0) {
         tableHtml += `<p>No scores for Level ${currentLevel} yet!</p>`;
     } else {
         const users = {};
@@ -152,9 +152,9 @@ async function renderLeaderboard(gameType, scope) {
     }
     contentDiv.innerHTML = tableHtml;
 
-    // Re-attach listeners after content replacement
-    document.getElementById('btn-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
-    document.getElementById('btn-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
+    // Final re-attach for the buttons after the table renders
+    document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
+    document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 }
 
 // --- INIT ---
