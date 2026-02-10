@@ -4,49 +4,57 @@ const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const lastname = localStorage.getItem('mathgame_lastname');
-const hour = localStorage.getItem('mathgame_hour');
+const lastname = localStorage.getItem('mathgame_lastname') || "";
+const hour = localStorage.getItem('mathgame_hour') || "";
 const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents", "roots"];
 const scopeTypes = ["class", "overall"];
 
 let currentLevel = 1; 
 
-// --- 1. REDEMPTION & POINTS DISPLAY ---
-document.getElementById('redeem-btn').onclick = async function() {
-    const redeemAmount = parseInt(document.getElementById('redeem-amount').value, 10);
-    const msgBox = document.getElementById('redeem-message');
-    
-    if (!redeemAmount || redeemAmount < 1) {
-        msgBox.style.color = "#c00";
-        msgBox.textContent = "Enter at least 1 point.";
-        return;
-    }
+// --- 1. REDEMPTION LOGIC ---
+const redeemBtn = document.getElementById('redeem-btn');
+if (redeemBtn) {
+    redeemBtn.onclick = async function() {
+        const amountInput = document.getElementById('redeem-amount');
+        const msgBox = document.getElementById('redeem-message');
+        const redeemAmount = parseInt(amountInput.value, 10);
 
-    const { data } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
-    const totalPoints = data.reduce((acc, row) => acc + (row.points || 0), 0);
+        if (!redeemAmount || redeemAmount < 1) {
+            msgBox.style.color = "#c00";
+            msgBox.textContent = "Enter at least 1 point.";
+            return;
+        }
 
-    if (redeemAmount > totalPoints) {
-        msgBox.style.color = "#c00";
-        msgBox.textContent = `Not enough points!`;
-        return;
-    }
+        const { data } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
+        const totalPoints = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
 
-    await supabase.from('scores').insert([{
-        lastname, hour, game_type: 'redeem', score: 0, points: -redeemAmount
-    }]);
+        if (redeemAmount > totalPoints) {
+            msgBox.style.color = "#c00";
+            msgBox.textContent = `Not enough points!`;
+            return;
+        }
 
-    msgBox.style.color = "#03793A";
-    msgBox.textContent = `Redeemed!`;
-    showUserInfo(); 
-};
+        await supabase.from('scores').insert([{
+            lastname, hour, game_type: 'redeem', score: 0, points: -redeemAmount
+        }]);
 
-// --- 2. STATS TABLE (No bulky fonts) ---
+        msgBox.style.color = "#03793A";
+        msgBox.textContent = `Redeemed!`;
+        showUserInfo(); 
+    };
+}
+
+// --- 2. STATS TABLE ---
 async function showUserInfo() {
+    const userInfoDiv = document.getElementById('user-info');
+    if (!userInfoDiv) return;
+
     const { data } = await supabase.from('scores').select('game_type, score, points').eq('lastname', lastname).eq('hour', hour);
     const points = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
     
-    // Update Points in the Redemption Box
-    document.getElementById('redeem-message').innerHTML = `Current Balance: <strong>${points}</strong>`;
+    // Update balance display in the redeem box if it exists
+    const msgBox = document.getElementById('redeem-message');
+    if (msgBox) msgBox.innerHTML = `Balance: <strong>${points}</strong>`;
 
     let html = `<h2>Welcome ${lastname} (Hour ${hour})</h2>
     <table class="leaderboard-table" style="width:100%;">
@@ -60,9 +68,9 @@ async function showUserInfo() {
         <tbody>`;
 
     gameTypes.forEach(gt => {
-        const rows1 = data.filter(r => r.game_type === gt);
+        const rows1 = data ? data.filter(r => r.game_type === gt) : [];
         const best1 = rows1.length > 0 ? Math.max(...rows1.map(r => r.score || 0)) : 0;
-        const rows2 = data.filter(r => r.game_type === gt + "_lvl2");
+        const rows2 = data ? data.filter(r => r.game_type === gt + "_lvl2") : [];
         const best2 = rows2.length > 0 ? Math.max(...rows2.map(r => r.score || 0)) : 0;
 
         html += `<tr>
@@ -73,32 +81,28 @@ async function showUserInfo() {
     });
 
     html += `</tbody></table>`;
-    document.getElementById('user-info').innerHTML = html;
+    userInfoDiv.innerHTML = html;
 }
 
 // --- 3. LEADERBOARD SYSTEM ---
 async function renderLeaderboard(gameType, scope) {
-    // 1. Build Level Toggle (Placed at the very top of the window)
-    const levelToggleHtml = `
-        <div style="text-align:right; margin-bottom:10px;">
-            <span style="font-weight:bold; margin-right:10px;">Difficulty:</span>
-            <button class="${currentLevel === 1 ? 'active' : ''}" onclick="window.changeLevel(1, '${gameType}', '${scope}')">Level 1</button>
-            <button class="${currentLevel === 2 ? 'active' : ''}" style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : ''}" onclick="window.changeLevel(2, '${gameType}', '${scope}')">Level 2</button>
-        </div>`;
-
-    // 2. Build Game Menu
     const menuBar = document.getElementById('menu-bar');
+    const submenuBar = document.getElementById('submenu-bar');
+    const contentDiv = document.getElementById('leaderboard-content');
+
+    if (!menuBar || !submenuBar || !contentDiv) return;
+
+    // Build Game Menu
     menuBar.innerHTML = '';
     gameTypes.forEach(g => {
         const btn = document.createElement('button');
         btn.className = (g === gameType ? 'active' : '');
         btn.textContent = g.charAt(0).toUpperCase() + g.slice(1);
-        btn.onclick = () => renderLeaderboard(g, "class");
+        btn.onclick = () => renderLeaderboard(g, scope);
         menuBar.appendChild(btn);
     });
 
-    // 3. Build Scope Menu
-    const submenuBar = document.getElementById('submenu-bar');
+    // Build Scope Menu
     submenuBar.innerHTML = '';
     scopeTypes.forEach(s => {
         const btn = document.createElement('button');
@@ -108,8 +112,20 @@ async function renderLeaderboard(gameType, scope) {
         submenuBar.appendChild(btn);
     });
 
-    // 4. Fetch Data
-    document.getElementById('leaderboard-content').innerHTML = levelToggleHtml + "<p>Loading...</p>";
+    // Difficulty Toggle HTML
+    const levelToggleHtml = `
+        <div style="text-align:right; margin-bottom:10px;">
+            <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
+            <button class="${currentLevel === 1 ? 'active' : ''}" id="btn-lvl1">Level 1</button>
+            <button class="${currentLevel === 2 ? 'active' : ''}" id="btn-lvl2">Level 2</button>
+        </div>`;
+
+    contentDiv.innerHTML = levelToggleHtml + "<p>Loading Leaderboard...</p>";
+
+    // Attach Toggle Listeners
+    document.getElementById('btn-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
+    document.getElementById('btn-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
+
     const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
     let qb = supabase.from('scores').select('lastname, hour, score').eq('game_type', dbType);
     if (scope === "class") qb = qb.eq('hour', hour);
@@ -134,16 +150,15 @@ async function renderLeaderboard(gameType, scope) {
             </tr>`).join('')}
         </table>`;
     }
-    document.getElementById('leaderboard-content').innerHTML = tableHtml;
+    contentDiv.innerHTML = tableHtml;
+
+    // Re-attach listeners after content replacement
+    document.getElementById('btn-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
+    document.getElementById('btn-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 }
 
-// Global function for the Level Switch buttons
-window.changeLevel = (lvl, game, scope) => {
-    currentLevel = lvl;
-    renderLeaderboard(game, scope);
-};
-
+// --- INIT ---
 (async () => {
     await showUserInfo();
-    renderLeaderboard('addition', 'class');
+    await renderLeaderboard('addition', 'class');
 })();
