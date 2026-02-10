@@ -62,8 +62,21 @@ async function showUserInfo() {
 
     let points = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
     
-    let info = `<h2 id="user-header">Welcome ${lastname} (Hour ${hour})</h2>`;
-    info += `<p style="font-size:1.2em; color:#03793A;"><b>Your Total Points: ${points}</b></p><ul>`;
+    // Header section
+    let info = `<h2>Welcome ${lastname} (Hour ${hour})</h2>`;
+    info += `<p style="font-size:1.4em; color:#03793A; margin-bottom:15px;"><b>Total Points: ${points}</b></p>`;
+
+    // Start of the 2-Column Table
+    info += `
+    <table class="leaderboard-table" style="width:100%; margin-bottom:20px;">
+        <thead>
+            <tr>
+                <th style="text-align:left;">Game Mode</th>
+                <th>Level 1 Best</th>
+                <th>Level 2 Best</th>
+            </tr>
+        </thead>
+        <tbody>`;
 
     for (const gt of gameTypes) {
         // Find best Lvl 1
@@ -74,9 +87,15 @@ async function showUserInfo() {
         const rows2 = data.filter(r => r.game_type === gt + "_lvl2");
         const best2 = rows2.length > 0 ? Math.max(...rows2.map(r => r.score || 0)) : 0;
 
-        info += `<li>${gt[0].toUpperCase() + gt.slice(1)}: <b>${best1}</b> | <span style="color:#d9534f">Lvl 2: ${best2}</span></li>`;
+        info += `
+            <tr>
+                <td style="text-align:left; font-weight:bold; text-transform:capitalize;">${gt}</td>
+                <td style="font-weight:bold; color:#03793A;">${best1}</td>
+                <td style="font-weight:bold; color:#d9534f;">${best2}</td>
+            </tr>`;
     }
-    info += `</ul>`;
+
+    info += `</tbody></table>`;
     document.getElementById('user-info').innerHTML = info;
 }
 
