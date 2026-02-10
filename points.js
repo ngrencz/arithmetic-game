@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
 
 const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const lastname = localStorage.getItem('mathgame_lastname') || "";
@@ -11,57 +11,45 @@ const scopeTypes = ["class", "overall"];
 
 let currentLevel = 1; 
 
-// --- 1. REDEMPTION LOGIC ---
-const redeemBtn = document.getElementById('redeem-btn');
-if (redeemBtn) {
-    redeemBtn.onclick = async function() {
-        const amountInput = document.getElementById('redeem-amount');
-        const msgBox = document.getElementById('redeem-message');
-        const redeemAmount = parseInt(amountInput.value, 10);
+// This ensures the script waits for the HTML to be ready
+document.addEventListener('DOMContentLoaded', () => {
+    initPage();
+});
 
-        if (!redeemAmount || redeemAmount < 1) {
-            msgBox.style.color = "#c00";
-            msgBox.textContent = "Enter at least 1 point.";
-            return;
-        }
-
-        const { data } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
-        const totalPoints = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
-
-        if (redeemAmount > totalPoints) {
-            msgBox.style.color = "#c00";
-            msgBox.textContent = `Not enough points!`;
-            return;
-        }
-
-        await supabase.from('scores').insert([{
-            lastname, hour, game_type: 'redeem', score: 0, points: -redeemAmount
-        }]);
-
-        msgBox.style.color = "#03793A";
-        msgBox.textContent = `Redeemed!`;
-        showUserInfo(); 
-    };
+async function initPage() {
+    await showUserInfo();
+    await renderLeaderboard('addition', 'class');
+    setupRedemption();
 }
 
-// --- 2. STATS TABLE ---
+// --- 1. USER STATS & BALANCE ---
 async function showUserInfo() {
     const userInfoDiv = document.getElementById('user-info');
     if (!userInfoDiv) return;
 
-    const { data, error } = await supabase.from('scores').select('game_type, score, points').eq('lastname', lastname).eq('hour', hour);
-    if (error) console.error("Error fetching User Info:", error);
+    // Fetch everything for this user
+    const { data, error } = await supabase
+        .from('scores')
+        .select('*')
+        .eq('lastname', lastname)
+        .eq('hour', hour);
+
+    if (error) {
+        userInfoDiv.innerHTML = "<p>Error connecting to database.</p>";
+        return;
+    }
 
     const points = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
     
+    // Update balance display in the redeem box
     const msgBox = document.getElementById('redeem-message');
     if (msgBox) msgBox.innerHTML = `Balance: <strong>${points}</strong>`;
 
-    let html = `<h2>Welcome ${lastname} (Hour ${hour})</h2>
-    <table class="leaderboard-table" style="width:100%;">
+    let html = `<h2 style="font-family: inherit;">Welcome ${lastname} (Hour ${hour})</h2>
+    <table class="leaderboard-table" style="width:100%; border-collapse: collapse;">
         <thead>
             <tr>
-                <th style="text-align:left;">Mode</th>
+                <th style="text-align:left; padding: 8px;">Mode</th>
                 <th>Level 1</th>
                 <th>Level 2</th>
             </tr>
@@ -69,15 +57,13 @@ async function showUserInfo() {
         <tbody>`;
 
     gameTypes.forEach(gt => {
-        const rows1 = data ? data.filter(r => r.game_type === gt) : [];
-        const best1 = rows1.length > 0 ? Math.max(...rows1.map(r => r.score || 0)) : 0;
-        const rows2 = data ? data.filter(r => r.game_type === gt + "_lvl2") : [];
-        const best2 = rows2.length > 0 ? Math.max(...rows2.map(r => r.score || 0)) : 0;
+        const best1 = Math.max(...(data.filter(r => r.game_type === gt).map(r => r.score || 0)), 0);
+        const best2 = Math.max(...(data.filter(r => r.game_type === gt + "_lvl2").map(r => r.score || 0)), 0);
 
         html += `<tr>
-            <td style="text-align:left; text-transform:capitalize;">${gt}</td>
-            <td>${best1}</td>
-            <td style="color:#d9534f;">${best2}</td>
+            <td style="text-align:left; text-transform:capitalize; padding: 8px;">${gt}</td>
+            <td style="text-align:center;">${best1}</td>
+            <td style="text-align:center; color:#d9534f;">${best2}</td>
         </tr>`;
     });
 
@@ -85,54 +71,40 @@ async function showUserInfo() {
     userInfoDiv.innerHTML = html;
 }
 
-// --- 3. LEADERBOARD SYSTEM ---
+// --- 2. LEADERBOARD ---
 async function renderLeaderboard(gameType, scope) {
     const contentDiv = document.getElementById('leaderboard-content');
     const menuBar = document.getElementById('menu-bar');
     const submenuBar = document.getElementById('submenu-bar');
     if (!contentDiv) return;
 
-    // Build Menus First
-    menuBar.innerHTML = '';
-    gameTypes.forEach(g => {
-        const btn = document.createElement('button');
-        btn.className = (g === gameType ? 'active' : '');
-        btn.textContent = g.charAt(0).toUpperCase() + g.slice(1);
-        btn.onclick = () => renderLeaderboard(g, scope);
-        menuBar.appendChild(btn);
-    });
+    // Build Game Menu
+    menuBar.innerHTML = gameTypes.map(g => 
+        `<button class="${g === gameType ? 'active' : ''}" onclick="window.dispatchLeaderboard('${g}', '${scope}')">${g.charAt(0).toUpperCase() + g.slice(1)}</button>`
+    ).join('');
 
-    submenuBar.innerHTML = '';
-    scopeTypes.forEach(s => {
-        const btn = document.createElement('button');
-        btn.className = (s === scope ? 'active' : '');
-        btn.textContent = (s === "class" ? `Hour ${hour}` : 'Overall');
-        btn.onclick = () => renderLeaderboard(gameType, s);
-        submenuBar.appendChild(btn);
-    });
+    // Build Scope Menu
+    submenuBar.innerHTML = scopeTypes.map(s => 
+        `<button class="${s === scope ? 'active' : ''}" onclick="window.dispatchLeaderboard('${gameType}', '${s}')">${s === 'class' ? 'Hour ' + hour : 'Overall'}</button>`
+    ).join('');
 
+    // Level Toggle
     const levelToggleHtml = `
         <div style="text-align:right; margin-bottom:10px;">
             <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
-            <button id="set-lvl1" class="lvl-btn ${currentLevel === 1 ? 'active' : ''}">Level 1</button>
-            <button id="set-lvl2" class="lvl-btn ${currentLevel === 2 ? 'active' : ''}" style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : ''}">Level 2</button>
+            <button class="${currentLevel === 1 ? 'active' : ''}" onclick="window.changeLevel(1, '${gameType}', '${scope}')">Level 1</button>
+            <button class="${currentLevel === 2 ? 'active' : ''}" style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : ''}" onclick="window.changeLevel(2, '${gameType}', '${scope}')">Level 2</button>
         </div>`;
 
-    contentDiv.innerHTML = levelToggleHtml + "<p>Loading Leaderboard...</p>";
-
-    // Re-attach Toggle Listeners immediately
-    document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
-    document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
+    contentDiv.innerHTML = levelToggleHtml + "<p>Loading...</p>";
 
     const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
     let qb = supabase.from('scores').select('lastname, hour, score').eq('game_type', dbType);
     if (scope === "class") qb = qb.eq('hour', hour);
 
-    const { data, error } = await qb;
-    if (error) console.error("Leaderboard Error:", error);
+    const { data } = await qb;
 
     let tableHtml = levelToggleHtml;
-
     if (!data || data.length === 0) {
         tableHtml += `<p>No scores for Level ${currentLevel} yet!</p>`;
     } else {
@@ -151,14 +123,29 @@ async function renderLeaderboard(gameType, scope) {
         </table>`;
     }
     contentDiv.innerHTML = tableHtml;
-
-    // Final re-attach for the buttons after the table renders
-    document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
-    document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 }
 
-// --- INIT ---
-(async () => {
-    await showUserInfo();
-    await renderLeaderboard('addition', 'class');
-})();
+// --- 3. REDEMPTION ---
+function setupRedemption() {
+    const btn = document.getElementById('redeem-btn');
+    if (!btn) return;
+    btn.onclick = async () => {
+        const val = parseInt(document.getElementById('redeem-amount').value);
+        if (isNaN(val) || val < 1) return;
+
+        const { data } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
+        const total = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
+
+        if (val > total) {
+            alert("Not enough points!");
+            return;
+        }
+
+        await supabase.from('scores').insert([{ lastname, hour, game_type: 'redeem', points: -val, score: 0 }]);
+        showUserInfo();
+    };
+}
+
+// --- GLOBAL HELPERS (Required for onclick in modules) ---
+window.dispatchLeaderboard = (g, s) => renderLeaderboard(g, s);
+window.changeLevel = (l, g, s) => { currentLevel = l; renderLeaderboard(g, s); };
