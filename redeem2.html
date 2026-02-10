@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Points Redemption & High Scores</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .level-1-text { color: #03793A; font-weight: bold; }
+    .level-2-text { color: #d9534f; font-weight: bold; }
+    .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
+    .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: #eee; border-radius: 5px; }
+    .tab-btn.active { background: #03793A; color: white; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="card-box" style="font-size:2em; font-weight:bold; color:#03793A; margin-top:1em; margin-bottom:0.4em;">
+    Classroom Stats & Redemption
+  </div>
+
+  <div class="card-box" id="redeem-box">
+    <form class="form-inline" onsubmit="return false;">
+      <label for="hour-select">Hour:</label>
+      <select id="hour-select">
+        <option value="">Select Hour</option>
+        <option value="01">Hour 01</option>
+        <option value="02">Hour 02</option>
+        <option value="03">Hour 03</option>
+        <option value="04">Hour 04</option>
+        <option value="05">Hour 05</option>
+        <option value="06">Hour 06</option>
+        <option value="07">Hour 07</option>
+      </select>
+
+      <label for="name-select">Name:</label>
+      <select id="name-select">
+        <option value="">Select Name</option>
+      </select>
+      <br>
+      <span id="points-available" style="font-weight:bold; margin-left:10px;"></span>
+      <label for="redeem-points" style="margin-left:10px;">Deduct:</label>
+      <input type="number" id="redeem-points" value="1" min="1" style="width:50px;" />
+      <button id="redeem-submit">Redeem</button>
+      <span id="redeem-message" style="margin-left:10px;"></span>
+    </form>
+  </div>
+
+  <div class="card-box">
+    <div style="font-size:1.5em; margin-bottom:10px;">🏆 All-Time High Scores</div>
+    <table id="high-scores-table">
+      <thead>
+        <tr>
+          <th>Game Mode</th>
+          <th>Lvl 1 Record</th>
+          <th>Lvl 1 Student</th>
+          <th>Lvl 2 Record</th>
+          <th>Lvl 2 Student</th>
+        </tr>
+      </thead>
+      <tbody id="high-scores-body">
+        </tbody>
+    </table>
+  </div>
+
+  <div class="card-box" id="leaderboard-window">
+    <div style="font-size:1.2em; margin-bottom:10px;">Recent Redemptions</div>
+    <table id="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Hour</th>
+          <th>Points</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="redemption-list"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+
+    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const gameModes = ["addition", "subtraction", "multiplication", "division", "exponents", "roots"];
+
+    // --- High Scores Logic ---
+    async function updateHighScores() {
+      const { data, error } = await supabase.from('scores').select('lastname, game_type, score');
+      if (error) return;
+
+      const records = {};
+      gameModes.forEach(m => {
+        records[m] = { score1: 0, name1: "-", score2: 0, name2: "-" };
+      });
+
+      data.forEach(row => {
+        const isLvl2 = row.game_type.endsWith('_lvl2');
+        const baseGame = isLvl2 ? row.game_type.replace('_lvl2', '') : row.game_type;
+
+        if (records[baseGame]) {
+          if (isLvl2) {
+            if (row.score > records[baseGame].score2) {
+              records[baseGame].score2 = row.score;
+              records[baseGame].name2 = row.lastname;
+            }
+          } else {
+            if (row.score > records[baseGame].score1) {
+              records[baseGame].score1 = row.score;
+              records[baseGame].name1 = row.lastname;
+            }
+          }
+        }
+      });
+
+      const tbody = document.getElementById('high-scores-body');
+      tbody.innerHTML = '';
+      gameModes.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-transform: capitalize; font-weight:bold;">${m}</td>
+          <td class="level-1-text">${records[m].score1}</td>
+          <td>${records[m].name1}</td>
+          <td class="level-2-text">${records[m].score2}</td>
+          <td>${records[m].name2}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- Existing Redemption & Points Logic ---
+    async function fetchNamesAndPointsForHour(hour) {
+      if (!hour) return [];
+      const { data, error } = await supabase.from('scores').select('lastname, points').eq('hour', hour);
+      if (error) return [];
+      const pointsByName = {};
+      data.forEach(row => {
+        pointsByName[row.lastname] = (pointsByName[row.lastname] || 0) + (row.points || 0);
+      });
+      return Object.entries(pointsByName).map(([lastname, points]) => ({ lastname, points }));
+    }
+
+    async function updateNameDropdown() {
+      const hour = document.getElementById("hour-select").value;
+      const nameSelect = document.getElementById("name-select");
+      nameSelect.innerHTML = '<option value="">Select Name</option>';
+      if (!hour) return;
+      const allNamesAndPoints = await fetchNamesAndPointsForHour(hour);
+      allNamesAndPoints.sort((a, b) => a.lastname.localeCompare(b.lastname));
+      allNamesAndPoints.forEach(({ lastname }) => {
+        const opt = document.createElement('option');
+        opt.value = lastname; opt.textContent = lastname;
+        nameSelect.appendChild(opt);
+      });
+      nameSelect._pointsMap = Object.fromEntries(allNamesAndPoints.map(np => [np.lastname, np.points]));
+    }
+
+    document.getElementById("hour-select").addEventListener("change", updateNameDropdown);
+    document.getElementById("name-select").addEventListener("change", function() {
+      const pts = (this._pointsMap || {})[this.value] ?? 0;
+      document.getElementById('points-available').textContent = this.value ? `Available: ${pts}` : "";
+    });
+
+    document.getElementById("redeem-submit").addEventListener("click", async () => {
+      const hour = document.getElementById("hour-select").value;
+      const lastname = document.getElementById("name-select").value;
+      const pointsRaw = parseInt(document.getElementById("redeem-points").value, 10);
+      if (!hour || !lastname || isNaN(pointsRaw)) return;
+
+      const { error } = await supabase.from('scores').insert([{
+        lastname, hour, points: -Math.abs(pointsRaw), game_type: "redeem", score: 0
+      }]);
+
+      if (!error) {
+        document.getElementById("redeem-message").textContent = "Success!";
+        updateBoard();
+        updateNameDropdown();
+        setTimeout(() => { document.getElementById("redeem-message").textContent = ""; }, 2000);
+      }
+    });
+
+    async function updateBoard() {
+      const { data } = await supabase.from('scores').select('*').eq('game_type', 'redeem').order('created_at', { ascending: false }).limit(10);
+      const tbody = document.getElementById('redemption-list');
+      tbody.innerHTML = '';
+      data?.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.lastname}</td><td>${r.hour}</td><td>${r.points}</td><td>${new Date(r.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>`;
+        tbody.appendChild(tr);
+      });
+      updateHighScores(); // Also refresh high scores
+    }
+
+    setInterval(updateBoard, 10000);
+    updateBoard();
+  </script>
+</body>
+</html>
