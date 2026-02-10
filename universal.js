@@ -99,10 +99,20 @@ function updateScoreAndPoints(currentScore, bestScoreFromDB) {
 
 function startGame() {
   if (lastname) {
-    Promise.all([fetchBestScore(lastname, hour, gameType), fetchTotalPoints(lastname, hour)]).then(([bestScore, points]) => {
-      $('.left').html(`<span class="game-userinfo">${lastname} (${hour}) | Lvl: ${selectedLevel} | Best: ${bestScore} | Points: ${points}</span><br><br><span class="game-seconds">Seconds left: <span class="seconds">0</span></span>`);
-      init(options);
-    });
+    // Determine the specific database key: e.g., "subtraction" or "subtraction_lvl2"
+    const dbType = selectedLevel === 2 ? `${gameType}_lvl2` : gameType;
+
+    Promise.all([fetchBestScore(lastname, hour, dbType), fetchTotalPoints(lastname, hour)])
+      .then(([bestScore, points]) => {
+        // Update the UI with the Level-specific Best Score
+        $('.left').html(`
+          <span class="game-userinfo">
+            ${lastname} (${hour}) | Lvl: ${selectedLevel} | Best: ${bestScore} | Points: ${points}
+          </span><br><br>
+          <span class="game-seconds">Seconds left: <span class="seconds">0</span></span>
+        `);
+        init(options);
+      });
   }
 }
 
