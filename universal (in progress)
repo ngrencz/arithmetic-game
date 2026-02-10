@@ -11,6 +11,7 @@ const hour = params.get('hour') || localStorage.getItem('mathgame_hour') || "";
 let selectedLevel = 1; 
 
 // --- Determine the game type ---
+// 0=Sun, 1=Mon... Friday is index 4.
 let gameType = params.get("game") || ["addition", "subtraction", "multiplication", "division", "roots"][((new Date()).getDay()+6)%7 % 5];
 
 let options = {
@@ -19,28 +20,46 @@ let options = {
     duration: 180
 };
 
+// Initial switch sets the base game type
 switch(gameType) {
     case "addition": options.add = true; break;
     case "subtraction": options.sub = true; break;
     case "multiplication": options.mul = true; break;
     case "division": options.div = true; break;
-    case "exponents": options.exp = true; break; 
-    case "roots": options.sqrt = true; break;
+    case "exponents": options.exp = true; break;
 }
 
 $(document).ready(function() {
     $('.level-btn').on('click', function() {
         selectedLevel = parseInt($(this).data('level')); 
+        
         if (selectedLevel === 2) {
+            // Level 2: Negative numbers enabled
             options.left_min = -12;
             options.right_min = -12;
+            
+            if (gameType === "roots") {
+                options.sqrt = true;
+                options.exp = false; 
+            }
+        } else {
+            // Level 1: Strictly positive
+            options.left_min = 2; 
+            options.right_min = 2;
+
+            if (gameType === "roots") {
+                options.sqrt = false; 
+                options.exp = true;  // Level 1 Friday = Exponents
+            }
         }
+
         $('#level-select').hide();
         $('.start').show();
         startGame();
     });
 });
 
+// --- Database Helpers ---
 async function fetchTotalPoints(lastname, hour) {
   if (!lastname || !hour) return 0;
   const { data, error } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
@@ -87,6 +106,7 @@ function startGame() {
   }
 }
 
+// --- Main Game Engine ---
 function init(options) {
     let problemStartTime;
     const game = $('#game');
@@ -102,58 +122,53 @@ function init(options) {
         const displayRight = right < 0 ? `(${right})` : right;
         return { prettyProblem: left + ' + ' + displayRight, answer: left + right };
     }
+
     function pg_sub() {
-        const left = randRange(options.left_min, options.left_max);
-        const right = randRange(options.right_min, options.right_max);
+        let left = randRange(options.left_min, options.left_max);
+        let right = randRange(options.right_min, options.right_max);
+        if (selectedLevel === 1) {
+            const tempLeft = Math.max(left, right);
+            const tempRight = Math.min(left, right);
+            left = tempLeft;
+            right = tempRight;
+        }
         const displayRight = right < 0 ? `(${right})` : right;
         return { prettyProblem: left + ' – ' + displayRight, answer: left - right };
     }
+
     function pg_mul() {
         const left = randRange(options.left_min, options.left_max);
         const right = randRange(options.right_min, options.right_max);
         const displayRight = right < 0 ? `(${right})` : right;
         return { prettyProblem: left + ' × ' + displayRight, answer: left * right };
     }
+
     function pg_div() {
-    let divisor = 0;
-    while (divisor === 0) {
-        divisor = randRange(options.left_min, options.left_max);
-    }
-    const quotient = randRange(options.right_min, options.right_max);
-    const dividend = divisor * quotient;
-    const displayDivisor = divisor < 0 ? `(${divisor})` : divisor;
-    return { prettyProblem: dividend + ' ÷ ' + displayDivisor, answer: quotient };
-}
-    function pg_sqrt() {
-    // 70% chance for Square Roots, 30% chance for Cube Roots
-    if (Math.random() > 0.3) {
-        // Square Roots (returns 1-12)
-        const root = randRange(1, 12);
-        return { 
-            prettyProblem: '√' + (root * root), 
-            answer: root 
-        };
-    } else {
-        // Cube Roots (returns 1-3)
-        const root = randRange(1, 3);
-        const cube = Math.pow(root, 3); // 1, 8, or 27
-    }
-    function pg_exp() {
-    const base = randRange(1, 12);
-    let exp;
-    
-    if (base <= 3) {
-        exp = randRange(0, 3); // 0, 1, 2, 3
-    } else {
-        exp = randRange(0, 2); // 0, 1, 2
+        let divisor = 0;
+        while (divisor === 0) { divisor = randRange(options.left_min, options.left_max); }
+        const quotient = randRange(options.right_min, options.right_max);
+        const dividend = divisor * quotient;
+        const displayDivisor = divisor < 0 ? `(${divisor})` : divisor;
+        return { prettyProblem: dividend + ' ÷ ' + displayDivisor, answer: quotient };
     }
 
-    const sup = {0:"⁰", 1:"¹", 2:"²", 3:"³"};
-    return { 
-        prettyProblem: base + sup[exp], 
-        answer: Math.pow(base, exp) 
-    };
-}
+    function pg_sqrt() {
+        if (Math.random() > 0.3) {
+            const root = randRange(1, 12);
+            return { prettyProblem: '√' + (root * root), answer: root };
+        } else {
+            const root = randRange(1, 3);
+            const cube = Math.pow(root, 3);
+            return { prettyProblem: '∛' + cube, answer: root };
+        }
+    }
+
+    function pg_exp() {
+        const base = randRange(1, 12);
+        let exp = (base <= 3) ? randRange(0, 3) : randRange(0, 2);
+        const sup = {0:"⁰", 1:"¹", 2:"²", 3:"³"};
+        return { prettyProblem: base + sup[exp], answer: Math.pow(base, exp) };
+    }
 
     const pgs = [];
     if (options.add) pgs.push(pg_add);
@@ -163,6 +178,7 @@ function init(options) {
     if (options.exp) pgs.push(pg_exp);
     if (options.sqrt) pgs.push(pg_sqrt);
 
+    let genned;
     function problemGeng() {
         genned = pgs[rand(pgs.length)]();
         problemStartTime = Date.now();
@@ -170,7 +186,7 @@ function init(options) {
         answer.val('');
     }
 
-    let genned, correct_ct = 0;
+    let correct_ct = 0;
     const startTime = Date.now();
     problemGeng();
 
@@ -188,6 +204,7 @@ function init(options) {
         if (d <= 0) {
             clearInterval(timer);
             answer.prop('disabled', true);
+            // Saves Level 2 scores with a suffix for clarity in DB
             const dbType = selectedLevel === 2 ? `${gameType}_lvl2` : gameType;
             fetchBestScore(lastname, hour, dbType).then(best => {
                 const res = updateScoreAndPoints(correct_ct, best);
