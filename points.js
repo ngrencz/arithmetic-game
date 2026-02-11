@@ -78,69 +78,75 @@ async function renderLeaderboard(gameType, scope) {
     const submenuBar = document.getElementById('submenu-bar');
     if (!contentDiv) return;
 
-    // 1. Version and UI Setup
-    const version = "v1.03-fix"; 
+    const version = "v1.04-glow"; 
     
-    // 2. Build Menus
+    // 1. Build Game Menu (Glows Green when active)
     menuBar.innerHTML = '';
     gameTypes.forEach(g => {
+        const isActive = (g === gameType);
         const btn = document.createElement('button');
-        btn.className = (g === gameType ? 'active' : '');
+        btn.className = isActive ? 'active' : '';
         btn.textContent = g.charAt(0).toUpperCase() + g.slice(1);
+        
+        // Match the green glow style
+        btn.style.color = isActive ? 'white' : '#03793A';
+        btn.style.background = isActive ? '#03793A' : 'transparent';
+        btn.style.border = '1px solid #03793A';
+        btn.style.cursor = 'pointer';
+        
         btn.onclick = () => renderLeaderboard(g, scope);
         menuBar.appendChild(btn);
     });
 
+    // 2. Build Scope Menu (Glows Green when active)
     submenuBar.innerHTML = '';
     scopeTypes.forEach(s => {
+        const isActive = (s === scope);
         const btn = document.createElement('button');
-        btn.className = (s === scope ? 'active' : '');
+        btn.className = isActive ? 'active' : '';
         btn.textContent = (s === "class" ? `Hour ${hour}` : 'Overall');
+        
+        // Match the green glow style
+        btn.style.color = isActive ? 'white' : '#03793A';
+        btn.style.background = isActive ? '#03793A' : 'transparent';
+        btn.style.border = '1px solid #03793A';
+        btn.style.cursor = 'pointer';
+        btn.style.marginRight = '5px';
+
         btn.onclick = () => renderLeaderboard(gameType, s);
         submenuBar.appendChild(btn);
     });
 
-    // 3. Create the Toggle HTML
+    // 3. Create Toggle HTML (Level 1 is Green, Level 2 is Red)
     const levelToggleHtml = `
         <div style="text-align:right; margin-bottom:10px;">
             <span style="font-size: 0.7em; color: #888; margin-right: 15px;">${version}</span>
             <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
-            <button id="set-lvl1" class="lvl-btn" 
+            <button id="set-lvl1" 
                 style="color:${currentLevel === 1 ? 'white' : '#03793A'}; background:${currentLevel === 1 ? '#03793A' : 'transparent'}; border: 1px solid #03793A; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
                 Level 1
             </button>
-            <button id="set-lvl2" class="lvl-btn" 
+            <button id="set-lvl2" 
                 style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : 'transparent'}; border: 1px solid #d9534f; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
                 Level 2
             </button>
         </div>`;
 
-    contentDiv.innerHTML = levelToggleHtml + "<p>Loading Leaderboard...</p>";
+    contentDiv.innerHTML = levelToggleHtml + "<p style='padding:10px;'>Loading Leaderboard...</p>";
 
-    // --- THE FIX: Attach listeners immediately after setting innerHTML ---
-    document.getElementById('set-lvl1').addEventListener('click', () => {
-        if (currentLevel !== 1) {
-            currentLevel = 1;
-            renderLeaderboard(gameType, scope);
-        }
-    });
+    // Attach Level Toggle Listeners
+    document.getElementById('set-lvl1').onclick = () => { if(currentLevel!==1){ currentLevel=1; renderLeaderboard(gameType, scope); }};
+    document.getElementById('set-lvl2').onclick = () => { if(currentLevel!==2){ currentLevel=2; renderLeaderboard(gameType, scope); }};
 
-    document.getElementById('set-lvl2').addEventListener('click', () => {
-        if (currentLevel !== 2) {
-            currentLevel = 2;
-            renderLeaderboard(gameType, scope);
-        }
-    });
-
-    // 4. Fetch Data from Supabase
+    // 4. Data Fetch
     const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
     let qb = supabase.from('scores').select('lastname, hour, score').eq('game_type', dbType);
     if (scope === "class") qb = qb.eq('hour', hour);
 
-    const { data, error } = await qb;
+    const { data } = await qb;
     
     // 5. Render Table
-    let tableHtml = levelToggleHtml; // Keep the buttons at the top
+    let tableHtml = levelToggleHtml;
     if (!data || data.length === 0) {
         tableHtml += `<p style="padding: 20px;">No scores for Level ${currentLevel} yet!</p>`;
     } else {
@@ -161,9 +167,9 @@ async function renderLeaderboard(gameType, scope) {
     
     contentDiv.innerHTML = tableHtml;
 
-    // --- RE-ATTACH listeners one last time because we just overwrote the innerHTML again ---
-    document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
-    document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
+    // Final re-attach for the buttons because innerHTML was reset
+    document.getElementById('set-lvl1').onclick = () => { if(currentLevel!==1){ currentLevel=1; renderLeaderboard(gameType, scope); }};
+    document.getElementById('set-lvl2').onclick = () => { if(currentLevel!==2){ currentLevel=2; renderLeaderboard(gameType, scope); }};
 }
 
 // --- 3. REDEMPTION ---
