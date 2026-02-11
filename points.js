@@ -106,8 +106,14 @@ async function renderLeaderboard(gameType, scope) {
     const levelToggleHtml = `
         <div style="text-align:right; margin-bottom:10px;">
             <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
-            <button class="${currentLevel === 1 ? 'active' : ''}" onclick="window.changeLevel(1, '${gameType}', '${scope}')">Level 1</button>
-            <button class="${currentLevel === 2 ? 'active' : ''}" style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : ''}" onclick="window.changeLevel(2, '${gameType}', '${scope}')">Level 2</button>
+            <button id="set-lvl1" class="lvl-btn ${currentLevel === 1 ? 'active' : ''}" 
+                style="color:${currentLevel === 1 ? 'white' : '#03793A'}; background:${currentLevel === 1 ? '#03793A' : ''}">
+                Level 1
+            </button>
+            <button id="set-lvl2" class="lvl-btn ${currentLevel === 2 ? 'active' : ''}" 
+                style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : ''}">
+                Level 2
+            </button>
         </div>`;
 
     contentDiv.innerHTML = levelToggleHtml + "<p>Loading...</p>";
