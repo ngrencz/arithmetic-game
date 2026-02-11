@@ -79,9 +79,23 @@ async function renderLeaderboard(gameType, scope) {
     if (!contentDiv) return;
 
     // Build Game Menu
-    menuBar.innerHTML = gameTypes.map(g => 
-        `<button class="${g === gameType ? 'active' : ''}" onclick="window.dispatchLeaderboard('${g}', '${scope}')">${g.charAt(0).toUpperCase() + g.slice(1)}</button>`
-    ).join('');
+    menuBar.innerHTML = '';
+    // Apply grid styling to the menuBar container
+    menuBar.style.display = 'grid';
+    menuBar.style.gridTemplateColumns = 'repeat(3, 1fr)'; // 3 equal columns
+    menuBar.style.gap = '8px'; // Space between buttons
+    menuBar.style.marginBottom = '15px';
+
+    gameTypes.forEach(g => {
+        const btn = document.createElement('button');
+        btn.className = (g === gameType ? 'active' : '');
+        // Remove default margins so the grid handles spacing
+        btn.style.margin = '0'; 
+        btn.style.width = '100%';
+        btn.textContent = g.charAt(0).toUpperCase() + g.slice(1);
+        btn.onclick = () => renderLeaderboard(g, scope);
+        menuBar.appendChild(btn);
+    });
 
     // Build Scope Menu
     submenuBar.innerHTML = scopeTypes.map(s => 
