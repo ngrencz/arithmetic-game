@@ -78,39 +78,60 @@ async function renderLeaderboard(gameType, scope) {
     const submenuBar = document.getElementById('submenu-bar');
     if (!contentDiv) return;
 
-    // Build Game Menu
+    // 1. Game Menu (Grid)
     menuBar.innerHTML = '';
-    // Apply grid styling to the menuBar container
     menuBar.style.display = 'grid';
-    menuBar.style.gridTemplateColumns = 'repeat(3, 1fr)'; // 3 equal columns
-    menuBar.style.gap = '8px'; // Space between buttons
+    menuBar.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
+    menuBar.style.gap = '8px'; 
     menuBar.style.marginBottom = '15px';
 
     gameTypes.forEach(g => {
         const btn = document.createElement('button');
         btn.className = (g === gameType ? 'active' : '');
-        // Remove default margins so the grid handles spacing
-        btn.style.margin = '0'; 
         btn.style.width = '100%';
         btn.textContent = g.charAt(0).toUpperCase() + g.slice(1);
         btn.onclick = () => renderLeaderboard(g, scope);
         menuBar.appendChild(btn);
     });
 
-    // Build Scope Menu
-    submenuBar.innerHTML = scopeTypes.map(s => 
-        `<button class="${s === scope ? 'active' : ''}" onclick="window.dispatchLeaderboard('${gameType}', '${s}')">${s === 'class' ? 'Hour ' + hour : 'Overall'}</button>`
-    ).join('');
+    // 2. Build Scope Menu (Green when active)
+    submenuBar.innerHTML = '';
+    scopeTypes.forEach(s => {
+        const btn = document.createElement('button');
+        const isActive = (s === scope);
+        btn.className = isActive ? 'active' : '';
+        // Set green if active
+        if (isActive) {
+            btn.style.backgroundColor = '#03793A';
+            btn.style.color = 'white';
+        }
+        btn.textContent = (s === 'class' ? 'Hour ' + hour : 'Overall');
+        btn.onclick = () => renderLeaderboard(gameType, s);
+        submenuBar.appendChild(btn);
+    });
 
-    // Level Toggle
+    // 3. Level Toggle (Green for Lvl 1, Red for Lvl 2)
+    const isLvl1 = currentLevel === 1;
+    const isLvl2 = currentLevel === 2;
+
     const levelToggleHtml = `
         <div style="text-align:right; margin-bottom:10px;">
             <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
-            <button class="${currentLevel === 1 ? 'active' : ''}" onclick="window.changeLevel(1, '${gameType}', '${scope}')">Level 1</button>
-            <button class="${currentLevel === 2 ? 'active' : ''}" style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : ''}" onclick="window.changeLevel(2, '${gameType}', '${scope}')">Level 2</button>
+            <button id="set-lvl1" class="${isLvl1 ? 'active' : ''}" 
+                style="background: ${isLvl1 ? '#03793A' : ''}; color: ${isLvl1 ? 'white' : ''};">
+                Level 1
+            </button>
+            <button id="set-lvl2" class="${isLvl2 ? 'active' : ''}" 
+                style="background: ${isLvl2 ? '#d9534f' : ''}; color: ${isLvl2 ? 'white' : '#d9534f'};">
+                Level 2
+            </button>
         </div>`;
 
     contentDiv.innerHTML = levelToggleHtml + "<p>Loading...</p>";
+
+    // Re-attach listeners for toggle buttons
+    document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
+    document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 
     const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
     let qb = supabase.from('scores').select('lastname, hour, score').eq('game_type', dbType);
@@ -118,10 +139,13 @@ async function renderLeaderboard(gameType, scope) {
 
     const { data } = await qb;
 
+    const { data } = await qb;
+
     let tableHtml = levelToggleHtml;
     if (!data || data.length === 0) {
-        tableHtml += `<p>No scores for Level ${currentLevel} yet!</p>`;
+        tableHtml += `<p style="text-align:center; padding: 20px;">No scores for Level ${currentLevel} yet!</p>`;
     } else {
+        // Aggregate to show only the BEST score per student
         const users = {};
         data.forEach(row => {
             const key = row.lastname + "/" + row.hour;
@@ -131,12 +155,21 @@ async function renderLeaderboard(gameType, scope) {
         
         tableHtml += `<table class="leaderboard-table" style="width:100%">
             <tr><th>Name</th><th>Hour</th><th>Score</th></tr>
-            ${agg.map(r => `<tr${r.lastname == lastname && r.hour == hour ? ' style="background:#05B25A22"' : ''}>
-                <td>${r.lastname}</td><td>${r.hour}</td><td>${r.score}</td>
-            </tr>`).join('')}
+            ${agg.map(r => `
+                <tr${r.lastname == lastname && r.hour == hour ? ' style="background:#03793A22; font-weight:bold;"' : ''}>
+                    <td>${r.lastname}</td>
+                    <td>${r.hour}</td>
+                    <td>${r.score}</td>
+                </tr>`).join('')}
         </table>`;
     }
+    
+    // Final render to the page
     contentDiv.innerHTML = tableHtml;
+
+    // IMPORTANT: Re-attach listeners one last time because we just overwrote innerHTML
+    document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
+    document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 }
 
 // --- 3. REDEMPTION ---
