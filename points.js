@@ -1,86 +1,73 @@
-I hear you—let’s stop over-complicating it. The "broken" moment happened when we tried to delete that duplicate line and the logic for the buttons got disconnected.
 
-Here is the exact last working structure, fixed with the correct syntax for the 3x2 grid and the color-coding. I have double-checked every bracket.
-
-JavaScript
-import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+That usually happens because of a "Syntax Error"—even a single missing bracket } or a duplicate line can cause the browser to stop reading the entire script.Since we've been piece-mealing the code, let's reset with a single, clean, and complete file. I have combined everything we discussed: the $3 \times 2$ grid, the green/red color-coding, the 2-column stats table, and the "Balance" display in the redeem box.Copy this entire block and replace everything in your points.js:JavaScriptimport { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
 
 const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const lastname = localStorage.getItem('mathgame_lastname');
-const hour = localStorage.getItem('mathgame_hour');
+const lastname = localStorage.getItem('mathgame_lastname') || "";
+const hour = localStorage.getItem('mathgame_hour') || "";
 const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents", "roots"];
 const scopeTypes = ["class", "overall"];
 
 let currentLevel = 1; 
 
-// --- 1. REDEEM POINTS ---
-document.getElementById('redeem-btn').onclick = async function() {
-    const redeemAmount = parseInt(document.getElementById('redeem-amount').value, 10);
-    const msgBox = document.getElementById('redeem-message');
+// Wait for HTML to load
+document.addEventListener('DOMContentLoaded', () => {
+    initPage();
+});
 
-    const { data } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
-    const totalPoints = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
-
-    if (redeemAmount > totalPoints) {
-        msgBox.style.color = "#c00";
-        msgBox.textContent = `Not enough points!`;
-        return;
-    }
-
-    await supabase.from('scores').insert([{
-        lastname, hour, game_type: 'redeem', score: 0, points: -redeemAmount
-    }]);
-
-    msgBox.style.color = "#03793A";
-    msgBox.textContent = `Redeemed!`;
+async function initPage() {
     await showUserInfo();
-};
+    await renderLeaderboard('addition', 'class');
+    setupRedemption();
+}
 
-// --- 2. USER STATS TABLE ---
+// --- 1. USER STATS & BALANCE ---
 async function showUserInfo() {
-    const { data } = await supabase.from('scores').select('game_type, score, points').eq('lastname', lastname).eq('hour', hour);
+    const userInfoDiv = document.getElementById('user-info');
+    if (!userInfoDiv) return;
+
+    const { data, error } = await supabase.from('scores').select('*').eq('lastname', lastname).eq('hour', hour);
+    if (error) return;
+
     const points = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
-    
     const msgBox = document.getElementById('redeem-message');
     if (msgBox) msgBox.innerHTML = `Balance: <strong>${points}</strong>`;
 
     let html = `<h2>Welcome ${lastname} (Hour ${hour})</h2>
-    <table class="leaderboard-table" style="width:100%;">
+    <table class="leaderboard-table" style="width:100%; border-collapse: collapse;">
         <thead>
             <tr>
-                <th style="text-align:left;">Mode</th>
+                <th style="text-align:left; padding: 8px;">Mode</th>
                 <th>Level 1</th>
                 <th>Level 2</th>
             </tr>
         </thead>
         <tbody>`;
 
-    for (const gt of gameTypes) {
-        const rows1 = data ? data.filter(r => r.game_type === gt) : [];
-        const best1 = rows1.length > 0 ? Math.max(...rows1.map(r => r.score || 0)) : 0;
-        const rows2 = data ? data.filter(r => r.game_type === gt + "_lvl2") : [];
-        const best2 = rows2.length > 0 ? Math.max(...rows2.map(r => r.score || 0)) : 0;
-
+    gameTypes.forEach(gt => {
+        const best1 = Math.max(...(data.filter(r => r.game_type === gt).map(r => r.score || 0)), 0);
+        const best2 = Math.max(...(data.filter(r => r.game_type === gt + "_lvl2").map(r => r.score || 0)), 0);
         html += `<tr>
-            <td style="text-align:left; text-transform:capitalize;">${gt}</td>
-            <td>${best1}</td>
-            <td style="color:#d9534f; font-weight:bold;">${best2}</td>
+            <td style="text-align:left; text-transform:capitalize; padding: 8px;">${gt}</td>
+            <td style="text-align:center;">${best1}</td>
+            <td style="text-align:center; color:#d9534f; font-weight:bold;">${best2}</td>
         </tr>`;
-    }
+    });
+
     html += `</tbody></table>`;
-    document.getElementById('user-info').innerHTML = html;
+    userInfoDiv.innerHTML = html;
 }
 
-// --- 3. LEADERBOARD ---
+// --- 2. LEADERBOARD ---
 async function renderLeaderboard(gameType, scope) {
     const contentDiv = document.getElementById('leaderboard-content');
     const menuBar = document.getElementById('menu-bar');
     const submenuBar = document.getElementById('submenu-bar');
+    if (!contentDiv) return;
 
-    // Build Game Grid (3x2)
+    // 1. Game Menu (3x2 Grid)
     menuBar.innerHTML = '';
     menuBar.style.display = 'grid';
     menuBar.style.gridTemplateColumns = 'repeat(3, 1fr)';
@@ -89,52 +76,53 @@ async function renderLeaderboard(gameType, scope) {
 
     gameTypes.forEach(g => {
         const btn = document.createElement('button');
-        const isSel = (g === gameType);
-        btn.className = isSel ? 'active' : '';
-        if (isSel) { btn.style.backgroundColor = '#03793A'; btn.style.color = 'white'; }
+        btn.className = (g === gameType ? 'active' : '');
+        btn.style.width = '100%';
         btn.textContent = g.charAt(0).toUpperCase() + g.slice(1);
         btn.onclick = () => renderLeaderboard(g, scope);
         menuBar.appendChild(btn);
     });
 
-    // Build Scope Menu
+    // 2. Scope Menu (Green when active)
     submenuBar.innerHTML = '';
     scopeTypes.forEach(s => {
         const btn = document.createElement('button');
-        const isAct = (s === scope);
-        btn.className = isAct ? 'active' : '';
-        if (isAct) { btn.style.backgroundColor = '#03793A'; btn.style.color = 'white'; }
+        const isActive = (s === scope);
+        btn.className = isActive ? 'active' : '';
+        if (isActive) {
+            btn.style.backgroundColor = '#03793A';
+            btn.style.color = 'white';
+        }
         btn.textContent = (s === 'class' ? 'Hour ' + hour : 'Overall');
         btn.onclick = () => renderLeaderboard(gameType, s);
         submenuBar.appendChild(btn);
     });
 
-    // Level Toggle
-    const is1 = (currentLevel === 1);
-    const is2 = (currentLevel === 2);
+    // 3. Level Toggle
+    const isLvl1 = (currentLevel === 1);
+    const isLvl2 = (currentLevel === 2);
     const levelToggleHtml = `
         <div style="text-align:right; margin-bottom:10px;">
             <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
-            <button id="set-lvl1" class="${is1?'active':''}" style="background:${is1?'#03793A':''}; color:${is1?'white':''};">Level 1</button>
-            <button id="set-lvl2" class="${is2?'active':''}" style="background:${is2?'#d9534f':''}; color:${is2?'white':'#d9534f'}; border:1px solid #d9534f;">Level 2</button>
+            <button id="set-lvl1" class="${isLvl1 ? 'active' : ''}" style="background:${isLvl1 ? '#03793A' : ''}; color:${isLvl1 ? 'white' : ''};">Level 1</button>
+            <button id="set-lvl2" class="${isLvl2 ? 'active' : ''}" style="background:${isLvl2 ? '#d9534f' : ''}; color:${isLvl2 ? 'white' : '#d9534f'};">Level 2</button>
         </div>`;
 
     contentDiv.innerHTML = levelToggleHtml + "<p style='text-align:center;'>Loading...</p>";
 
-    // Attach Toggle Clicks
+    // Attach Toggle Listeners
     document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
     document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 
-    // Fetch
     const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
     let qb = supabase.from('scores').select('lastname, hour, score').eq('game_type', dbType);
     if (scope === "class") qb = qb.eq('hour', hour);
 
     const { data } = await qb;
-    let tableHtml = levelToggleHtml;
 
+    let tableHtml = levelToggleHtml;
     if (!data || data.length === 0) {
-        tableHtml += `<p style="text-align:center; padding: 20px;">No scores yet!</p>`;
+        tableHtml += `<p style="text-align:center; padding: 20px;">No scores for Level ${currentLevel} yet!</p>`;
     } else {
         const users = {};
         data.forEach(row => {
@@ -145,20 +133,40 @@ async function renderLeaderboard(gameType, scope) {
         
         tableHtml += `<table class="leaderboard-table" style="width:100%">
             <tr><th>Name</th><th>Hour</th><th>Score</th></tr>
-            ${agg.map(r => `<tr${r.lastname==lastname && r.hour==hour ? ' style="background:#03793A22; font-weight:bold;"':''}>
-                <td>${r.lastname}</td><td>${r.hour}</td><td>${r.score}</td>
-            </tr>`).join('')}
+            ${agg.map(r => `
+                <tr${r.lastname == lastname && r.hour == hour ? ' style="background:#03793A22; font-weight:bold;"' : ''}>
+                    <td>${r.lastname}</td><td>${r.hour}</td><td>${r.score}</td>
+                </tr>`).join('')}
         </table>`;
     }
     contentDiv.innerHTML = tableHtml;
 
-    // Re-attach Toggle Clicks after table load
+    // Re-attach listeners after content update
     document.getElementById('set-lvl1').onclick = () => { currentLevel = 1; renderLeaderboard(gameType, scope); };
     document.getElementById('set-lvl2').onclick = () => { currentLevel = 2; renderLeaderboard(gameType, scope); };
 }
 
-// --- START ---
-(async () => {
-    await showUserInfo();
-    renderLeaderboard('addition', 'class');
-})();
+// --- 3. REDEMPTION ---
+function setupRedemption() {
+    const btn = document.getElementById('redeem-btn');
+    if (!btn) return;
+    btn.onclick = async () => {
+        const input = document.getElementById('redeem-amount');
+        const val = parseInt(input.value);
+        if (isNaN(val) || val < 1) return;
+
+        const { data } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
+        const total = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
+
+        if (val > total) {
+            alert("Not enough points!");
+            return;
+        }
+
+        await supabase.from('scores').insert([{ lastname, hour, game_type: 'redeem', points: -val, score: 0 }]);
+        showUserInfo();
+    };
+}
+
+// Global helper for Scope Buttons
+window.dispatchLeaderboard = (g, s) => renderLeaderboard(g, s);
