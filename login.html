@@ -2,185 +2,126 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Grinch Games - Login</title>
-  <style>
-    /* Quick styling to keep the login box centered and clean */
-    body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding-top: 50px; }
-    #login-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-    input, select, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
-    button { background: #05B25A; color: white; border: none; font-weight: bold; cursor: pointer; }
-    button:hover { background: #03793A; }
-    label { display: block; text-align: left; font-size: 0.9em; font-weight: bold; }
-    .hidden { display: none; }
-  </style>
+  <title>Grencz's Grinch Points Math Game Login</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <div id="login-box">
-    <h2 id="login-title" style="color: #05B25A;">Sign In</h2>
-    
-    <div id="username-section">
-      <label for="username">Username:</label>
-      <input id="username" type="text" maxlength="20" placeholder="Enter Username">
-      <p style="font-size: 0.8em; margin-top: 10px;">
-        First time? <a href="#" id="show-migration">Click here to migrate old points.</a>
-      </p>
-    </div>
+    <h2 style="color: #05B25A;">Sign In</h2>
+    <label for="lastname">Last Name:</label>
+    <input id="lastname" type="text" maxlength="20" placeholder="Last Name" autocomplete="family-name">
 
-    <div id="migration-section" class="hidden">
-      <p style="font-size: 0.9em; color: #666;">Find your old records to pick a nickname.</p>
-      <label for="lastname">Old Last Name:</label>
-      <input id="lastname" type="text" maxlength="20" placeholder="Last Name">
-
-      <label for="hour">Hour:</label>
-      <select id="hour">
-        <option value="">Select Hour</option>
-        <option value="01">Hour 01</option>
-        <option value="02">Hour 02</option>
-        <option value="03">Hour 03</option>
-        <option value="04">Hour 04</option>
-        <option value="05">Hour 05</option>
-        <option value="06">Hour 06</option>
-        <option value="07">Hour 07</option>
-        <option value="00">Guest</option>
-      </select>
-      <p style="font-size: 0.8em; margin-top: 10px;">
-        <a href="#" id="show-login">Back to Username Login</a>
-      </p>
-    </div>
-
-    <div id="login-error" style="color:red; min-height: 1.2em; margin: 10px 0; font-size: 0.85em;"></div>
+    <label for="hour">Hour:</label>
+    <select id="hour">
+      <option value="">Select Hour</option>
+      <option value="01">Hour 01</option>
+      <option value="02">Hour 02</option>
+      <option value="03">Hour 03</option>
+      <option value="04">Hour 04</option>
+      <option value="05">Hour 05</option>
+      <option value="06">Hour 06</option>
+      <option value="07">Hour 07</option>
+      <option value="00">Guest</option>
+    </select>
+    <div id="login-error" style="color:red;"></div>
     <button id="login-btn">Log In</button>
   </div>
 
   <script type="module">
     import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
-
     const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const loginBox = document.getElementById('login-box');
-    const errBox = document.getElementById("login-error");
-    let isMigrationMode = false;
-    let isUpgradeScreen = false;
-
-    // --- VIEW TOGGLES ---
-    document.getElementById('show-migration').onclick = (e) => { 
-      e.preventDefault(); 
-      isMigrationMode = true; 
-      toggleView(); 
-    };
-    document.getElementById('show-login').onclick = (e) => { 
-      e.preventDefault(); 
-      isMigrationMode = false; 
-      toggleView(); 
-    };
-
-    function toggleView() {
-      document.getElementById('username-section').classList.toggle('hidden', isMigrationMode);
-      document.getElementById('migration-section').classList.toggle('hidden', !isMigrationMode);
-      document.getElementById('login-btn').textContent = isMigrationMode ? 'Find My Data' : 'Log In';
-      errBox.textContent = "";
+    // Helper function to handle redirects
+    function redirectForDay(lastname, hour) {
+      const dayNum = (new Date()).getDay();
+      const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
+      if (dayNum >= 1 && dayNum <= 5) {
+        const gameType = gameTypeArray[dayNum - 1];
+        window.location.href =
+          "index.html?lastname=" + encodeURIComponent(lastname)
+          + "&hour=" + hour
+          + "&game=" + gameType;
+      } else {
+        window.location.href =
+          "points.html?lastname=" + encodeURIComponent(lastname)
+          + "&hour=" + hour;
+      }
     }
 
-    async function init() {
+    // AUTO-LOGIN
+    async function autoLoginCheck() {
       const storedName = localStorage.getItem('mathgame_lastname');
       const storedHour = localStorage.getItem('mathgame_hour');
       if (storedName && storedHour) {
-        // Check if it's already a migrated nickname
-        const { data } = await supabase.from('scores').select('id').eq('lastname', storedName.toLowerCase()).limit(1);
-        
-        if (data && data.length > 0 && !storedName.includes(' ')) {
-          redirectUser(storedName.toLowerCase(), storedHour);
-        } else {
-          showUpgradeUI(storedName, storedHour);
-        }
-      }
-    }
+        const { data, error } = await supabase
+          .from('scores')
+          .select('id')
+          .eq('lastname', storedName)
+          .eq('hour', storedHour);
 
-    function showUpgradeUI(oldName, hour) {
-      isUpgradeScreen = true;
-      loginBox.innerHTML = `
-        <h2 style="color: #03793A;">Upgrade Your Account</h2>
-        <p>Welcome back, <b>${oldName}</b>!</p>
-        <p style="font-size: 0.9em;">We're switching to nicknames. Pick yours now:</p>
-        <input id="new-username" type="text" placeholder="New Username" maxlength="15">
-        <div id="up-error" style="color:red; margin:10px 0; font-size: 0.85em;"></div>
-        <button id="upgrade-btn">Save & Start Playing</button>
-      `;
-
-      document.getElementById('upgrade-btn').onclick = async () => {
-        const newU = document.getElementById('new-username').value.trim().toLowerCase();
-        const upErr = document.getElementById('up-error');
-
-        if (newU.length < 3 || newU.includes(oldName.toLowerCase())) {
-          upErr.textContent = "Invalid. 3+ chars and no part of your real name!";
+        if (error) {
+          console.error("Supabase error during auto-login:", error);
           return;
         }
-
-        const { data: taken } = await supabase.from('scores').select('id').eq('lastname', newU).limit(1);
-        if (taken && taken.length > 0) { upErr.textContent = "Username taken!"; return; }
-
-        const { data, error } = await supabase.from('scores').update({ lastname: newU }).eq('lastname', oldName).eq('hour', hour).select();
-
-        if (error || !data || data.length === 0) {
-          const { data: retry } = await supabase.from('scores').update({ lastname: newU }).ilike('lastname', oldName).eq('hour', hour).select();
-          if (retry && retry.length > 0) finishMigration(newU, hour);
-          else upErr.textContent = "Could not find records. Check with teacher.";
-        } else {
-          finishMigration(newU, hour);
-        }
-      };
-    }
-
-    function finishMigration(newU, hour) {
-      localStorage.setItem('mathgame_lastname', newU);
-      redirectUser(newU, hour);
-    }
-
-    function redirectUser(user, hour) {
-      const dayNum = (new Date()).getDay();
-      const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
-      const target = (dayNum >= 1 && dayNum <= 5) ? "index.html" : "points.html";
-      let url = `${target}?lastname=${encodeURIComponent(user)}&hour=${hour}`;
-      if(dayNum >= 1 && dayNum <= 5) url += `&game=${gameTypeArray[dayNum-1]}`;
-      window.location.href = url;
-    }
-
-    document.getElementById("login-btn").onclick = async function() {
-      if (isMigrationMode) {
-        const oldL = document.getElementById('lastname').value.trim();
-        const h = document.getElementById('hour').value;
-        if (!oldL || !h) { errBox.textContent = "Enter name and hour."; return; }
-        showUpgradeUI(oldL, h);
-      } else {
-        const u = document.getElementById("username").value.trim().toLowerCase();
-        if (!u) { errBox.textContent = "Please enter a username."; return; }
-        const { data } = await supabase.from('scores').select('hour').eq('lastname', u).limit(1);
         if (data && data.length > 0) {
-          localStorage.setItem('mathgame_lastname', u);
-          localStorage.setItem('mathgame_hour', data[0].hour);
-          redirectUser(u, data[0].hour);
+          redirectForDay(storedName, storedHour);
         } else {
-          errBox.textContent = "Username not found.";
+          localStorage.removeItem('mathgame_lastname');
+          localStorage.removeItem('mathgame_hour');
         }
       }
+    }
+
+    autoLoginCheck();
+
+    // MANUAL LOGIN
+    document.getElementById("login-btn").onclick = async function() {
+      var lastname = document.getElementById("lastname").value.trim();
+      var hour = document.getElementById("hour").value;
+      var errBox = document.getElementById("login-error");
+      errBox.textContent = '';
+
+      // Validate
+      if (lastname.length < 2 || !/^[a-zA-Z0-5\-\' ]+$/.test(lastname)) {
+        errBox.textContent = "Please enter your last name.";
+        return;
+      }
+      if (!/^0[0-7]$/.test(hour)) {
+        errBox.textContent = "Please select your hour (01-07 or Guest).";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('scores')
+        .select('id')
+        .eq('lastname', lastname)
+        .eq('hour', hour);
+
+      if (error) {
+        errBox.textContent = "Cannot check name right now. Try again later.";
+        console.error(error);
+        return;
+      }
+      if (!data || data.length === 0) {
+        errBox.textContent = "Name not found for your selected hour. Please check your spelling or ask your teacher.";
+        return;
+      }
+
+      localStorage.setItem('mathgame_lastname', lastname);
+      localStorage.setItem('mathgame_hour', hour);
+
+      redirectForDay(lastname, hour);
     };
 
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        if (isUpgradeScreen) {
-          const upBtn = document.getElementById('upgrade-btn');
-          if (upBtn) upBtn.click();
-        } else {
-          const logBtn = document.getElementById('login-btn');
-          if (logBtn) logBtn.click();
-        }
-      }
+    // Enter key triggers
+    document.getElementById("hour").addEventListener('keydown', function(e){
+      if(e.key === "Enter") document.getElementById("login-btn").click();
     });
-
-    init();
+    document.getElementById("lastname").addEventListener('keydown', function(e){
+      if(e.key === "Enter") document.getElementById("hour").focus();
+    });
   </script>
 </body>
 </html>
