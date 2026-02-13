@@ -1,12 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Interactive Quiz</title>
-    </head>
+  <meta charset="UTF-8">
+  <title>Grinch Games - Login</title>
+  <style>
+    /* Quick styling to keep the login box centered and clean */
+    body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding-top: 50px; }
+    #login-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+    input, select, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
+    button { background: #05B25A; color: white; border: none; font-weight: bold; cursor: pointer; }
+    button:hover { background: #03793A; }
+    label { display: block; text-align: left; font-size: 0.9em; font-weight: bold; }
+    .hidden { display: none; }
+  </style>
+</head>
 <body>
 
-    <script>
+  <div id="login-box">
+    <h2 id="login-title" style="color: #05B25A;">Sign In</h2>
+    
+    <div id="username-section">
+      <label for="username">Username:</label>
+      <input id="username" type="text" maxlength="20" placeholder="Enter Username">
+      <p style="font-size: 0.8em; margin-top: 10px;">
+        First time? <a href="#" id="show-migration">Click here to migrate old points.</a>
+      </p>
+    </div>
+
+    <div id="migration-section" class="hidden">
+      <p style="font-size: 0.9em; color: #666;">Find your old records to pick a nickname.</p>
+      <label for="lastname">Old Last Name:</label>
+      <input id="lastname" type="text" maxlength="20" placeholder="Last Name">
+
+      <label for="hour">Hour:</label>
+      <select id="hour">
+        <option value="">Select Hour</option>
+        <option value="01">Hour 01</option>
+        <option value="02">Hour 02</option>
+        <option value="03">Hour 03</option>
+        <option value="04">Hour 04</option>
+        <option value="05">Hour 05</option>
+        <option value="06">Hour 06</option>
+        <option value="07">Hour 07</option>
+        <option value="00">Guest</option>
+      </select>
+      <p style="font-size: 0.8em; margin-top: 10px;">
+        <a href="#" id="show-login">Back to Username Login</a>
+      </p>
+    </div>
+
+    <div id="login-error" style="color:red; min-height: 1.2em; margin: 10px 0; font-size: 0.85em;"></div>
+    <button id="login-btn">Log In</button>
+  </div>
+
+  <script type="module">
     import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
 
     const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
@@ -16,15 +63,23 @@
     const loginBox = document.getElementById('login-box');
     const errBox = document.getElementById("login-error");
     let isMigrationMode = false;
-    let isUpgradeScreen = false; // New flag to prevent the "null" error
+    let isUpgradeScreen = false;
 
     // --- VIEW TOGGLES ---
-    document.getElementById('show-migration').onclick = (e) => { e.preventDefault(); isMigrationMode = true; toggleView(); };
-    document.getElementById('show-login').onclick = (e) => { e.preventDefault(); isMigrationMode = false; toggleView(); };
+    document.getElementById('show-migration').onclick = (e) => { 
+      e.preventDefault(); 
+      isMigrationMode = true; 
+      toggleView(); 
+    };
+    document.getElementById('show-login').onclick = (e) => { 
+      e.preventDefault(); 
+      isMigrationMode = false; 
+      toggleView(); 
+    };
 
     function toggleView() {
-      document.getElementById('username-section').style.display = isMigrationMode ? 'none' : 'block';
-      document.getElementById('migration-section').style.display = isMigrationMode ? 'block' : 'none';
+      document.getElementById('username-section').classList.toggle('hidden', isMigrationMode);
+      document.getElementById('migration-section').classList.toggle('hidden', !isMigrationMode);
       document.getElementById('login-btn').textContent = isMigrationMode ? 'Find My Data' : 'Log In';
       errBox.textContent = "";
     }
@@ -33,8 +88,9 @@
       const storedName = localStorage.getItem('mathgame_lastname');
       const storedHour = localStorage.getItem('mathgame_hour');
       if (storedName && storedHour) {
+        // Check if it's already a migrated nickname
         const { data } = await supabase.from('scores').select('id').eq('lastname', storedName.toLowerCase()).limit(1);
-        // Check if it's already a migrated nickname (no spaces and found in DB)
+        
         if (data && data.length > 0 && !storedName.includes(' ')) {
           redirectUser(storedName.toLowerCase(), storedHour);
         } else {
@@ -44,13 +100,13 @@
     }
 
     function showUpgradeUI(oldName, hour) {
-      isUpgradeScreen = true; // Mark that we are now on the upgrade screen
+      isUpgradeScreen = true;
       loginBox.innerHTML = `
         <h2 style="color: #03793A;">Upgrade Your Account</h2>
         <p>Welcome back, <b>${oldName}</b>!</p>
         <p style="font-size: 0.9em;">We're switching to nicknames. Pick yours now:</p>
         <input id="new-username" type="text" placeholder="New Username" maxlength="15">
-        <div id="up-error" style="color:red; margin:10px 0;"></div>
+        <div id="up-error" style="color:red; margin:10px 0; font-size: 0.85em;"></div>
         <button id="upgrade-btn">Save & Start Playing</button>
       `;
 
@@ -100,6 +156,7 @@
         showUpgradeUI(oldL, h);
       } else {
         const u = document.getElementById("username").value.trim().toLowerCase();
+        if (!u) { errBox.textContent = "Please enter a username."; return; }
         const { data } = await supabase.from('scores').select('hour').eq('lastname', u).limit(1);
         if (data && data.length > 0) {
           localStorage.setItem('mathgame_lastname', u);
@@ -111,7 +168,6 @@
       }
     };
 
-    // --- KEYBOARD SUPPORT FIX ---
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         if (isUpgradeScreen) {
@@ -125,6 +181,6 @@
     });
 
     init();
-        </script>
+  </script>
 </body>
 </html>
