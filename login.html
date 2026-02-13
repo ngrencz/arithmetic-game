@@ -28,100 +28,80 @@
   </div>
 
   <script type="module">
-    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
-    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script type="module">
+  import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+  const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Helper function to handle redirects
-    function redirectForDay(lastname, hour) {
-      const dayNum = (new Date()).getDay();
-      const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
-      if (dayNum >= 1 && dayNum <= 5) {
-        const gameType = gameTypeArray[dayNum - 1];
-        window.location.href =
-          "index.html?lastname=" + encodeURIComponent(lastname)
-          + "&hour=" + hour
-          + "&game=" + gameType;
-      } else {
-        window.location.href =
-          "points.html?lastname=" + encodeURIComponent(lastname)
-          + "&hour=" + hour;
-      }
+  function redirectForDay(lastname, hour) {
+    const dayNum = (new Date()).getDay();
+    const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
+    const page = (dayNum >= 1 && dayNum <= 5) ? "index.html" : "points.html";
+    let url = `${page}?lastname=${encodeURIComponent(lastname)}&hour=${hour}`;
+    if (dayNum >= 1 && dayNum <= 5) url += `&game=${gameTypeArray[dayNum - 1]}`;
+    window.location.href = url;
+  }
+
+  document.getElementById("login-btn").onclick = async function() {
+    const inputVal = document.getElementById("lastname").value.trim();
+    const hour = document.getElementById("hour").value;
+    const errBox = document.getElementById("login-error");
+    errBox.textContent = '';
+
+    if (!inputVal || !hour) {
+      errBox.textContent = "Please enter your name/username and select an hour.";
+      return;
     }
 
-    // AUTO-LOGIN
-    async function autoLoginCheck() {
-      const storedName = localStorage.getItem('mathgame_lastname');
-      const storedHour = localStorage.getItem('mathgame_hour');
-      if (storedName && storedHour) {
-        const { data, error } = await supabase
-          .from('scores')
-          .select('id')
-          .eq('lastname', storedName)
-          .eq('hour', storedHour);
+    // 1. TRY LOGGING IN AS USERNAME (Lowercase check)
+    const { data: userCheck } = await supabase.from('scores').select('id').eq('lastname', inputVal.toLowerCase()).eq('hour', hour);
 
-        if (error) {
-          console.error("Supabase error during auto-login:", error);
-          return;
-        }
-        if (data && data.length > 0) {
-          redirectForDay(storedName, storedHour);
-        } else {
-          localStorage.removeItem('mathgame_lastname');
-          localStorage.removeItem('mathgame_hour');
-        }
-      }
-    }
-
-    autoLoginCheck();
-
-    // MANUAL LOGIN
-    document.getElementById("login-btn").onclick = async function() {
-      var lastname = document.getElementById("lastname").value.trim();
-      var hour = document.getElementById("hour").value;
-      var errBox = document.getElementById("login-error");
-      errBox.textContent = '';
-
-      // Validate
-      if (lastname.length < 2 || !/^[a-zA-Z0-5\-\' ]+$/.test(lastname)) {
-        errBox.textContent = "Please enter your last name.";
-        return;
-      }
-      if (!/^0[0-7]$/.test(hour)) {
-        errBox.textContent = "Please select your hour (01-07 or Guest).";
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('scores')
-        .select('id')
-        .eq('lastname', lastname)
-        .eq('hour', hour);
-
-      if (error) {
-        errBox.textContent = "Cannot check name right now. Try again later.";
-        console.error(error);
-        return;
-      }
-      if (!data || data.length === 0) {
-        errBox.textContent = "Name not found for your selected hour. Please check your spelling or ask your teacher.";
-        return;
-      }
-
-      localStorage.setItem('mathgame_lastname', lastname);
+    if (userCheck && userCheck.length > 0) {
+      localStorage.setItem('mathgame_lastname', inputVal.toLowerCase());
       localStorage.setItem('mathgame_hour', hour);
+      redirectForDay(inputVal.toLowerCase(), hour);
+      return;
+    }
 
-      redirectForDay(lastname, hour);
-    };
+    // 2. FALLBACK: CHECK FOR OLD LAST NAME (Case Sensitive)
+    const { data: nameCheck } = await supabase.from('scores').select('id').eq('lastname', inputVal).eq('hour', hour);
 
-    // Enter key triggers
-    document.getElementById("hour").addEventListener('keydown', function(e){
-      if(e.key === "Enter") document.getElementById("login-btn").click();
-    });
-    document.getElementById("lastname").addEventListener('keydown', function(e){
-      if(e.key === "Enter") document.getElementById("hour").focus();
-    });
+    if (nameCheck && nameCheck.length > 0) {
+      // It's an old name! Ask for a username
+      const newU = prompt(`Welcome back, ${inputVal}! For privacy, please pick a nickname (no part of your real name):`);
+      
+      if (!newU || newU.length < 3 || newU.toLowerCase().includes(inputVal.toLowerCase())) {
+        alert("Invalid username. Must be 3+ letters and not include your last name.");
+        return;
+      }
+
+      // Check if the nickname is taken
+      const { data: taken } = await supabase.from('scores').select('id').eq('lastname', newU.toLowerCase()).limit(1);
+      if (taken && taken.length > 0) {
+        alert("That nickname is already taken!");
+        return;
+      }
+
+      // UPDATE ALL RECORDS IN SUPABASE
+      const { error } = await supabase.from('scores').update({ lastname: newU.toLowerCase() }).eq('lastname', inputVal).eq('hour', hour);
+
+      if (!error) {
+        localStorage.setItem('mathgame_lastname', newU.toLowerCase());
+        localStorage.setItem('mathgame_hour', hour);
+        redirectForDay(newU.toLowerCase(), hour);
+      } else {
+        errBox.textContent = "Error saving. Try again.";
+      }
+    } else {
+      errBox.textContent = "Record not found. Check spelling and hour.";
+    }
+  };
+
+  // Keep your Enter key listeners
+  document.getElementById("hour").addEventListener('keydown', (e) => { if(e.key === "Enter") document.getElementById("login-btn").click(); });
+  document.getElementById("lastname").addEventListener('keydown', (e) => { if(e.key === "Enter") document.getElementById("hour").focus(); });
+</script>
   </script>
 </body>
 </html>
