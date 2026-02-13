@@ -27,9 +27,8 @@
     <button id="login-btn">Log In</button>
   </div>
 
-<script type="module">
+  <script type="module">
     import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
-
     const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -43,75 +42,77 @@
       window.location.href = url;
     }
 
-    // This wrapper is more robust for modules
-    const startApp = () => {
-      const loginBtn = document.getElementById("login-btn");
-      if (!loginBtn) return; // Safety check
+    // --- MANUAL LOGIN LOGIC ---
+    document.getElementById("login-btn").onclick = async function() {
+      const inputVal = document.getElementById("lastname").value.trim();
+      const hour = document.getElementById("hour").value;
+      const errBox = document.getElementById("login-error");
+      errBox.textContent = '';
 
-      loginBtn.onclick = async function() {
-        const inputVal = document.getElementById("lastname").value.trim();
-        const hour = document.getElementById("hour").value;
-        const errBox = document.getElementById("login-error");
-        errBox.textContent = '';
+      if (!inputVal || !hour) {
+        errBox.textContent = "Enter your name/nickname and select an hour.";
+        return;
+      }
 
-        if (!inputVal || !hour) {
-          errBox.textContent = "Enter your name/nickname and select an hour.";
+      // 1. Check if input is a NICKNAME (lowercase)
+      const { data: userCheck } = await supabase.from('scores')
+        .select('id')
+        .eq('lastname', inputVal.toLowerCase())
+        .eq('hour', hour);
+
+      if (userCheck && userCheck.length > 0) {
+        localStorage.setItem('mathgame_lastname', inputVal.toLowerCase());
+        localStorage.setItem('mathgame_hour', hour);
+        redirectForDay(inputVal.toLowerCase(), hour);
+        return;
+      }
+
+      // 2. Check if input is an OLD LAST NAME (Exact case)
+      const { data: nameCheck } = await supabase.from('scores')
+        .select('id')
+        .eq('lastname', inputVal)
+        .eq('hour', hour);
+
+      if (nameCheck && nameCheck.length > 0) {
+        const newNickname = prompt(`Welcome back, ${inputVal}! Pick a nickname (3+ letters, no spaces, no real names):`);
+        
+        if (!newNickname || newNickname.trim().length < 3 || newNickname.toLowerCase().includes(inputVal.toLowerCase())) {
+          alert("Invalid nickname. Try again!");
           return;
         }
 
-        const { data: userCheck } = await supabase.from('scores')
-          .select('id')
-          .eq('lastname', inputVal.toLowerCase())
-          .eq('hour', hour);
-
-        if (userCheck && userCheck.length > 0) {
-          localStorage.setItem('mathgame_lastname', inputVal.toLowerCase());
-          localStorage.setItem('mathgame_hour', hour);
-          redirectForDay(inputVal.toLowerCase(), hour);
+        const cleanNick = newNickname.trim().toLowerCase();
+        const { data: taken } = await supabase.from('scores').select('id').eq('lastname', cleanNick).limit(1);
+        
+        if (taken && taken.length > 0) {
+          alert("That nickname is already taken!");
           return;
         }
 
-        const { data: nameCheck } = await supabase.from('scores')
-          .select('id')
+        const { error: updateErr } = await supabase.from('scores')
+          .update({ lastname: cleanNick })
           .eq('lastname', inputVal)
           .eq('hour', hour);
 
-        if (nameCheck && nameCheck.length > 0) {
-          const newNickname = prompt(`Welcome back! Pick a nickname (3+ chars, no spaces):`);
-          if (!newNickname || newNickname.trim().length < 3 || newNickname.toLowerCase().includes(inputVal.toLowerCase())) {
-            alert("Invalid nickname.");
-            return;
-          }
-
-          const cleanNick = newNickname.trim().toLowerCase();
-          const { data: taken } = await supabase.from('scores').select('id').eq('lastname', cleanNick).limit(1);
-          if (taken && taken.length > 0) { alert("Taken!"); return; }
-
-          const { error: updateErr } = await supabase.from('scores').update({ lastname: cleanNick }).eq('lastname', inputVal).eq('hour', hour);
-          if (!updateErr) {
-            localStorage.setItem('mathgame_lastname', cleanNick);
-            localStorage.setItem('mathgame_hour', hour);
-            redirectForDay(cleanNick, hour);
-          } else { errBox.textContent = "Update error."; }
+        if (!updateErr) {
+          localStorage.setItem('mathgame_lastname', cleanNick);
+          localStorage.setItem('mathgame_hour', hour);
+          redirectForDay(cleanNick, hour);
         } else {
-          errBox.textContent = "No record found.";
+          errBox.textContent = "Error updating records.";
         }
-      };
-
-      document.getElementById("lastname").addEventListener('keydown', (e) => {
-        if (e.key === "Enter") document.getElementById("hour").focus();
-      });
-      document.getElementById("hour").addEventListener('keydown', (e) => {
-        if (e.key === "Enter") loginBtn.click();
-      });
+      } else {
+        errBox.textContent = "No record found. Check spelling and hour.";
+      }
     };
 
-    // EXECUTION
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', startApp);
-    } else {
-      startApp();
-    }
+    // ENTER KEY SUPPORT
+    document.getElementById("lastname").addEventListener('keydown', (e) => {
+      if (e.key === "Enter") document.getElementById("hour").focus();
+    });
+    document.getElementById("hour").addEventListener('keydown', (e) => {
+      if (e.key === "Enter") document.getElementById("login-btn").click();
+    });
   </script>
 </body>
 </html>
