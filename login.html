@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Grinch Games - Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="login-box">
+    <h2 id="login-title" style="color: #05B25A;">Sign In</h2>
+    
+    <div id="username-section">
+      <label for="username">Username:</label>
+      <input id="username" type="text" maxlength="20" placeholder="Enter Username">
+      <p style="font-size: 0.8em; margin-top: 10px;">First time? <a href="#" id="show-migration">Click here to migrate your old points.</a></p>
+    </div>
+
+    <div id="migration-section" style="display:none;">
+      <p style="font-size: 0.9em; color: #666;">Enter your old details to switch to a username.</p>
+      <label for="lastname">Old Last Name:</label>
+      <input id="lastname" type="text" maxlength="20" placeholder="Last Name">
+
+      <label for="hour">Hour:</label>
+      <select id="hour">
+        <option value="">Select Hour</option>
+        <option value="01">Hour 01</option>
+        <option value="02">Hour 02</option>
+        <option value="03">Hour 03</option>
+        <option value="04">Hour 04</option>
+        <option value="05">Hour 05</option>
+        <option value="06">Hour 06</option>
+        <option value="07">Hour 07</option>
+        <option value="00">Guest</option>
+      </select>
+      <p style="font-size: 0.8em; margin-top: 10px;"><a href="#" id="show-login">Back to Username Login</a></p>
+    </div>
+
+    <div id="login-error" style="color:red; min-height: 1.2em; margin: 10px 0;"></div>
+    <button id="login-btn">Log In</button>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
+    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let isMigrationMode = false;
+
+    // Toggle UI Modes
+    document.getElementById('show-migration').onclick = () => { isMigrationMode = true; updateUI(); };
+    document.getElementById('show-login').onclick = () => { isMigrationMode = false; updateUI(); };
+
+    function updateUI() {
+      document.getElementById('username-section').style.display = isMigrationMode ? 'none' : 'block';
+      document.getElementById('migration-section').style.display = isMigrationMode ? 'block' : 'none';
+      document.getElementById('login-title').textContent = isMigrationMode ? 'Data Migration' : 'Sign In';
+      document.getElementById('login-btn').textContent = isMigrationMode ? 'Find My Data' : 'Log In';
+    }
+
+    function redirectUser(user, hour) {
+      const dayNum = (new Date()).getDay();
+      const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
+      const target = (dayNum >= 1 && dayNum <= 5) ? "index.html" : "points.html";
+      
+      let url = `${target}?lastname=${encodeURIComponent(user)}&hour=${hour}`;
+      if(dayNum >= 1 && dayNum <= 5) url += `&game=${gameTypeArray[dayNum-1]}`;
+      
+      window.location.href = url;
+    }
+
+    // MAIN LOGIN ACTION
+    document.getElementById("login-btn").onclick = async function() {
+      const errBox = document.getElementById("login-error");
+      errBox.textContent = '';
+
+      if (!isMigrationMode) {
+        // --- STEP 1: USERNAME LOGIN ---
+        const username = document.getElementById("username").value.trim().toLowerCase();
+        if (!username) return errBox.textContent = "Enter your username.";
+
+        const { data, error } = await supabase.from('scores').select('hour').eq('lastname', username).limit(1);
+
+        if (data && data.length > 0) {
+          localStorage.setItem('mathgame_lastname', username);
+          localStorage.setItem('mathgame_hour', data[0].hour);
+          redirectUser(username, data[0].hour);
+        } else {
+          errBox.textContent = "Username not found. Need to migrate old points?";
+        }
+      } else {
+        // --- STEP 2: FIND OLD DATA ---
+        const oldLast = document.getElementById("lastname").value.trim();
+        const hour = document.getElementById("hour").value;
+
+        const { data } = await supabase.from('scores').select('id').eq('lastname', oldLast).eq('hour', hour);
+
+        if (!data || data.length === 0) {
+          errBox.textContent = "Old details not found. Check spelling/hour.";
+          return;
+        }
+
+        // --- STEP 3: CONVERT TO USERNAME ---
+        const newUsername = prompt("Old data found! Create a new username (No part of your real name allowed):").trim().toLowerCase();
+        
+        // Safety Check: No part of real name
+        if (newUsername.length < 3 || newUsername.includes(oldLast.toLowerCase())) {
+          alert("Invalid username. Do not use your real name and make it at least 3 characters.");
+          return;
+        }
+
+        // Check if username is taken
+        const { data: check } = await supabase.from('scores').select('id').eq('lastname', newUsername).limit(1);
+        if (check && check.length > 0) return alert("Username already taken. Try another.");
+
+        // UPDATE ALL RECORDS
+        const { error: upErr } = await supabase
+          .from('scores')
+          .update({ lastname: newUsername })
+          .eq('lastname', oldLast)
+          .eq('hour', hour);
+
+        if (!upErr) {
+          alert("Migration successful! Your new username is: " + newUsername);
+          localStorage.setItem('mathgame_lastname', newUsername);
+          localStorage.setItem('mathgame_hour', hour);
+          redirectUser(newUsername, hour);
+        }
+      }
+    };
+  </script>
+</body>
+</html>
