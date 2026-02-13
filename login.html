@@ -12,11 +12,11 @@
     <div id="username-section">
       <label for="username">Username:</label>
       <input id="username" type="text" maxlength="20" placeholder="Enter Username">
-      <p style="font-size: 0.8em; margin-top: 10px;">First time? <a href="#" id="show-migration">Click here to migrate your old points.</a></p>
+      <p style="font-size: 0.8em; margin-top: 10px;">First time? <a href="#" id="show-migration">Click here to migrate old points.</a></p>
     </div>
 
     <div id="migration-section" style="display:none;">
-      <p style="font-size: 0.9em; color: #666;">Enter your old details to switch to a username.</p>
+      <p style="font-size: 0.9em; color: #666;">Find your old records to pick a nickname.</p>
       <label for="lastname">Old Last Name:</label>
       <input id="lastname" type="text" maxlength="20" placeholder="Last Name">
 
@@ -41,90 +41,112 @@
 
   <script type="module">
     import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
-const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const loginBox = document.getElementById('login-box');
-const errBox = document.getElementById("login-error");
+    const loginBox = document.getElementById('login-box');
+    const errBox = document.getElementById("login-error");
+    let isMigrationMode = false;
 
-async function init() {
-    const storedName = localStorage.getItem('mathgame_lastname');
-    const storedHour = localStorage.getItem('mathgame_hour');
+    // --- VIEW TOGGLES ---
+    document.getElementById('show-migration').onclick = (e) => { e.preventDefault(); isMigrationMode = true; toggleView(); };
+    document.getElementById('show-login').onclick = (e) => { e.preventDefault(); isMigrationMode = false; toggleView(); };
 
-    if (storedName && storedHour) {
-        // Check if this is ALREADY a migrated username
-        const { data } = await supabase.from('scores').select('id').eq('lastname', storedName.toLowerCase()).limit(1);
-        
-        if (data && data.length > 0 && !storedName.includes(' ')) {
-            // It's a valid username, log them in
-            redirectUser(storedName.toLowerCase(), storedHour);
-        } else {
-            // It's an old last name! Show the Upgrade UI
-            showUpgradeUI(storedName, storedHour);
-        }
+    function toggleView() {
+      document.getElementById('username-section').style.display = isMigrationMode ? 'none' : 'block';
+      document.getElementById('migration-section').style.display = isMigrationMode ? 'block' : 'none';
+      document.getElementById('login-btn').textContent = isMigrationMode ? 'Find My Data' : 'Log In';
+      errBox.textContent = "";
     }
-}
 
-function showUpgradeUI(oldName, hour) {
-    loginBox.innerHTML = `
+    async function init() {
+      const storedName = localStorage.getItem('mathgame_lastname');
+      const storedHour = localStorage.getItem('mathgame_hour');
+      if (storedName && storedHour) {
+        const { data } = await supabase.from('scores').select('id').eq('lastname', storedName.toLowerCase()).limit(1);
+        if (data && data.length > 0 && !storedName.includes(' ')) {
+          redirectUser(storedName.toLowerCase(), storedHour);
+        } else {
+          showUpgradeUI(storedName, storedHour);
+        }
+      }
+    }
+
+    function showUpgradeUI(oldName, hour) {
+      loginBox.innerHTML = `
         <h2 style="color: #03793A;">Upgrade Your Account</h2>
         <p>Welcome back, <b>${oldName}</b>!</p>
-        <p style="font-size: 0.9em;">We are switching to usernames for privacy. Please pick a nickname:</p>
+        <p style="font-size: 0.9em;">We're switching to nicknames. Pick yours now:</p>
         <input id="new-username" type="text" placeholder="New Username" maxlength="15">
         <div id="up-error" style="color:red; margin:10px 0;"></div>
         <button id="upgrade-btn">Save & Start Playing</button>
-    `;
+      `;
 
-    document.getElementById('upgrade-btn').onclick = async () => {
+      document.getElementById('upgrade-btn').onclick = async () => {
         const newU = document.getElementById('new-username').value.trim().toLowerCase();
         const upErr = document.getElementById('up-error');
 
         if (newU.length < 3 || newU.includes(oldName.toLowerCase())) {
-            upErr.textContent = "Invalid. 3+ chars and no real names!";
-            return;
+          upErr.textContent = "Invalid. 3+ chars and no part of your real name!";
+          return;
         }
 
-        // Verify username isn't taken
         const { data: taken } = await supabase.from('scores').select('id').eq('lastname', newU).limit(1);
-        if (taken && taken.length > 0) return upErr.textContent = "Username taken!";
+        if (taken && taken.length > 0) { upErr.textContent = "Username taken!"; return; }
 
-        // Update Supabase
-        const { error } = await supabase.from('scores').update({ lastname: newU }).eq('lastname', oldName).eq('hour', hour);
+        const { data, error } = await supabase.from('scores').update({ lastname: newU }).eq('lastname', oldName).eq('hour', hour).select();
 
-        if (!error) {
-            localStorage.setItem('mathgame_lastname', newU);
-            redirectUser(newU, hour);
+        if (error || !data || data.length === 0) {
+          // Fallback for casing
+          const { data: retry } = await supabase.from('scores').update({ lastname: newU }).ilike('lastname', oldName).eq('hour', hour).select();
+          if (retry && retry.length > 0) finishMigration(newU, hour);
+          else upErr.textContent = "Could not find records. Check with teacher.";
         } else {
-            upErr.textContent = "Error saving. Try again.";
+          finishMigration(newU, hour);
         }
-    };
-}
-
-function redirectUser(user, hour) {
-    const dayNum = (new Date()).getDay();
-    const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
-    const target = (dayNum >= 1 && dayNum <= 5) ? "index.html" : "points.html";
-    let url = `${target}?lastname=${encodeURIComponent(user)}&hour=${hour}`;
-    if(dayNum >= 1 && dayNum <= 5) url += `&game=${gameTypeArray[dayNum-1]}`;
-    window.location.href = url;
-}
-
-// Manual Login Logic (for people with no cookies or new students)
-document.getElementById("login-btn").onclick = async function() {
-    const username = document.getElementById("username").value.trim().toLowerCase();
-    const { data } = await supabase.from('scores').select('hour').eq('lastname', username).limit(1);
-
-    if (data && data.length > 0) {
-        localStorage.setItem('mathgame_lastname', username);
-        localStorage.setItem('mathgame_hour', data[0].hour);
-        redirectUser(username, data[0].hour);
-    } else {
-        errBox.textContent = "Username not found. See your teacher to get started!";
+      };
     }
-};
 
-init();
+    function finishMigration(newU, hour) {
+      localStorage.setItem('mathgame_lastname', newU);
+      redirectUser(newU, hour);
+    }
+
+    function redirectUser(user, hour) {
+      const dayNum = (new Date()).getDay();
+      const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
+      const target = (dayNum >= 1 && dayNum <= 5) ? "index.html" : "points.html";
+      let url = `${target}?lastname=${encodeURIComponent(user)}&hour=${hour}`;
+      if(dayNum >= 1 && dayNum <= 5) url += `&game=${gameTypeArray[dayNum-1]}`;
+      window.location.href = url;
+    }
+
+    document.getElementById("login-btn").onclick = async function() {
+      if (isMigrationMode) {
+        const oldL = document.getElementById('lastname').value.trim();
+        const h = document.getElementById('hour').value;
+        if (!oldL || !h) { errBox.textContent = "Enter name and hour."; return; }
+        showUpgradeUI(oldL, h);
+      } else {
+        const u = document.getElementById("username").value.trim().toLowerCase();
+        const { data } = await supabase.from('scores').select('hour').eq('lastname', u).limit(1);
+        if (data && data.length > 0) {
+          localStorage.setItem('mathgame_lastname', u);
+          localStorage.setItem('mathgame_hour', data[0].hour);
+          redirectUser(u, data[0].hour);
+        } else {
+          errBox.textContent = "Username not found.";
+        }
+      }
+    };
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('login-btn').click();
+    });
+
+    init();
   </script>
 </body>
 </html>
