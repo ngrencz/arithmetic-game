@@ -43,6 +43,9 @@
   }
 
   // --- MANUAL LOGIN LOGIC ---
+  window.addEventListener('DOMContentLoaded', () => {
+  
+  // MANUAL LOGIN LOGIC
   document.getElementById("login-btn").onclick = async function() {
     const inputVal = document.getElementById("lastname").value.trim();
     const hour = document.getElementById("hour").value;
@@ -54,7 +57,7 @@
       return;
     }
 
-    // STEP 1: Check if input is a NICKNAME (lowercase/migrated)
+    // 1. Check if input is a NICKNAME
     const { data: userCheck } = await supabase.from('scores')
       .select('id')
       .eq('lastname', inputVal.toLowerCase())
@@ -67,15 +70,14 @@
       return;
     }
 
-    // STEP 2: Check if input is an OLD LAST NAME (Exact case match)
+    // 2. Check if input is an OLD LAST NAME
     const { data: nameCheck } = await supabase.from('scores')
       .select('id')
       .eq('lastname', inputVal)
       .eq('hour', hour);
 
     if (nameCheck && nameCheck.length > 0) {
-      // Prompt for nickname while staying on the same screen
-      const newNickname = prompt(`Welcome back, ${inputVal}! We are moving to nicknames for privacy. Please pick a nickname (3+ letters, no spaces, no real names):`);
+      const newNickname = prompt(`Welcome back, ${inputVal}! Pick a nickname (3+ letters, no spaces, no real names):`);
       
       if (!newNickname || newNickname.trim().length < 3 || newNickname.toLowerCase().includes(inputVal.toLowerCase())) {
         alert("Invalid nickname. Try again!");
@@ -83,15 +85,13 @@
       }
 
       const cleanNick = newNickname.trim().toLowerCase();
-
-      // Check if that nickname is taken
       const { data: taken } = await supabase.from('scores').select('id').eq('lastname', cleanNick).limit(1);
+      
       if (taken && taken.length > 0) {
-        alert("That nickname is already taken! Try a different one.");
+        alert("That nickname is already taken!");
         return;
       }
 
-      // Update the database records
       const { error: updateErr } = await supabase.from('scores')
         .update({ lastname: cleanNick })
         .eq('lastname', inputVal)
@@ -102,20 +102,21 @@
         localStorage.setItem('mathgame_hour', hour);
         redirectForDay(cleanNick, hour);
       } else {
-        errBox.textContent = "Error updating records. See teacher.";
+        errBox.textContent = "Error updating records.";
       }
     } else {
-      errBox.textContent = "No record found. Check spelling (Caps matter for old names!) and hour.";
+      errBox.textContent = "No record found. Check spelling and hour.";
     }
   };
 
-  // --- ENTER KEY SUPPORT ---
+  // ENTER KEY SUPPORT
   document.getElementById("lastname").addEventListener('keydown', (e) => {
     if (e.key === "Enter") document.getElementById("hour").focus();
   });
   document.getElementById("hour").addEventListener('keydown', (e) => {
     if (e.key === "Enter") document.getElementById("login-btn").click();
   });
+});
 </script>
 </body>
 </html>
