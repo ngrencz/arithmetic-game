@@ -42,67 +42,69 @@
       window.location.href = url;
     }
 
-    // --- MANUAL LOGIN LOGIC ---
+    function loginUser(name, hour) {
+      localStorage.setItem('mathgame_lastname', name);
+      localStorage.setItem('mathgame_hour', hour);
+      redirectForDay(name, hour);
+    }
+
     document.getElementById("login-btn").onclick = async function() {
-      const inputVal = document.getElementById("lastname").value.trim();
+      const rawInput = document.getElementById("lastname").value.trim();
       const hour = document.getElementById("hour").value;
       const errBox = document.getElementById("login-error");
       errBox.textContent = '';
 
-      if (!inputVal || !hour) {
+      if (!rawInput || !hour) {
         errBox.textContent = "Enter your name/nickname and select an hour.";
         return;
       }
 
-      // 1. Check if input is a NICKNAME (lowercase)
-      const { data: userCheck } = await supabase.from('scores')
-        .select('id')
-        .eq('lastname', inputVal.toLowerCase())
-        .eq('hour', hour);
-
-      if (userCheck && userCheck.length > 0) {
-        localStorage.setItem('mathgame_lastname', inputVal.toLowerCase());
-        localStorage.setItem('mathgame_hour', hour);
-        redirectForDay(inputVal.toLowerCase(), hour);
-        return;
-      }
-
-      // 2. Check if input is an OLD LAST NAME (Exact case)
-      const { data: nameCheck } = await supabase.from('scores')
-        .select('id')
-        .eq('lastname', inputVal)
-        .eq('hour', hour);
-
-      if (nameCheck && nameCheck.length > 0) {
-        const newNickname = prompt(`Welcome back, ${inputVal}! Pick a nickname (3+ letters, no spaces, no real names):`);
-        
-        if (!newNickname || newNickname.trim().length < 3 || newNickname.toLowerCase().includes(inputVal.toLowerCase())) {
-          alert("Invalid nickname. Try again!");
-          return;
-        }
-
-        const cleanNick = newNickname.trim().toLowerCase();
-        const { data: taken } = await supabase.from('scores').select('id').eq('lastname', cleanNick).limit(1);
-        
-        if (taken && taken.length > 0) {
-          alert("That nickname is already taken!");
-          return;
-        }
-
-        const { error: updateErr } = await supabase.from('scores')
-          .update({ lastname: cleanNick })
-          .eq('lastname', inputVal)
+      // 1. Force Title Case for the first search (e.g., "grencz" -> "Grencz")
+      const titleCaseName = rawInput.charAt(0).toUpperCase() + rawInput.slice(1).toLowerCase();
+      
+      // 2. SEARCH 1: Check for Title Case (Trigger for nickname prompt)
+      const { data: titleCheck } = await supabase
+          .from('scores')
+          .select('lastname')
+          .eq('lastname', titleCaseName)
           .eq('hour', hour);
 
-        if (!updateErr) {
-          localStorage.setItem('mathgame_lastname', cleanNick);
-          localStorage.setItem('mathgame_hour', hour);
-          redirectForDay(cleanNick, hour);
-        } else {
-          errBox.textContent = "Error updating records.";
-        }
+      if (titleCheck && titleCheck.length > 0) {
+          const newNickname = prompt(`Welcome, ${titleCaseName}! Please create a nickname (3+ letters, lowercase, no real names):`);
+          
+          if (!newNickname || newNickname.trim().length < 3) {
+              alert("Nickname too short! Try again.");
+              return;
+          }
+
+          const cleanNick = newNickname.trim().toLowerCase();
+
+          // Update all records for this student to their new nickname
+          const { error: updateErr } = await supabase
+              .from('scores')
+              .update({ lastname: cleanNick })
+              .eq('lastname', titleCaseName)
+              .eq('hour', hour);
+
+          if (!updateErr) {
+              loginUser(cleanNick, hour);
+          } else {
+              errBox.textContent = "Error saving nickname.";
+          }
+          return; 
+      }
+
+      // 3. SEARCH 2: Check for Lowercase (Standard login for existing nicknames)
+      const { data: nickCheck } = await supabase
+          .from('scores')
+          .select('lastname')
+          .eq('lastname', rawInput.toLowerCase())
+          .eq('hour', hour);
+
+      if (nickCheck && nickCheck.length > 0) {
+          loginUser(rawInput.toLowerCase(), hour);
       } else {
-        errBox.textContent = "No record found. Check spelling and hour.";
+          errBox.textContent = "Name not found. Use your Last Name (Capitalized) for your first login.";
       }
     };
 
