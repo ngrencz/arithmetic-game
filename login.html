@@ -1,120 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Grencz's Grinch Points Math Game Login</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Game | Login</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SB_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+    </script>
+    
+    <style>
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            background-color: #f8fafc; 
+            font-family: sans-serif;
+        }
+        .login-bubble {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 320px;
+            border: 1px solid #e2e8f0;
+        }
+        .field-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #1e293b;}
+        select { width: 100%; padding: 10px; border-radius: 6px; border: 2px solid #cbd5e1; box-sizing: border-box; font-size: 1rem; outline: none;}
+        select:focus { border-color: #05B25A; }
+        
+        /* Google Button Styling */
+        .google-btn { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #ffffff; 
+            color: #475569; 
+            border: 2px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        .google-btn:hover { background-color: #f1f5f9; border-color: #94a3b8; }
+        .google-icon { width: 20px; height: 20px; }
+        
+        #loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); justify-content: center; align-items: center;
+            font-size: 1.5rem; font-weight: bold; color: #05B25A; z-index: 1000;
+        }
+    </style>
 </head>
 <body>
-  <div id="login-box">
-    <h2 style="color: #05B25A;">Sign In</h2>
-    <label for="lastname">Last Name:</label>
-    <input id="lastname" type="text" maxlength="20" placeholder="Last Name" autocomplete="family-name">
 
-    <label for="hour">Hour:</label>
-    <select id="hour">
-      <option value="">Select Hour</option>
-      <option value="01">Hour 01</option>
-      <option value="02">Hour 02</option>
-      <option value="03">Hour 03</option>
-      <option value="04">Hour 04</option>
-      <option value="05">Hour 05</option>
-      <option value="06">Hour 06</option>
-      <option value="07">Hour 07</option>
-      <option value="00">Guest</option>
-    </select>
-    <div id="login-error" style="color:red;"></div>
-    <button id="login-btn">Log In</button>
-  </div>
+<div id="loading-overlay">Authenticating...</div>
 
-  <script type="module">
-    import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
-    const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+<div class="login-bubble">
+    <h2 style="text-align: center; margin-top: 0; color: #05B25A;">Speed Game</h2>
+    
+    <div class="field-group">
+        <label>Class Period</label>
+        <select id="hour-select">
+            <option value="00">Guest (00)</option>
+            <option value="01">Hour 01</option>
+            <option value="02">Hour 02</option>
+            <option value="03">Hour 03</option>
+            <option value="04">Hour 04</option>
+            <option value="05">Hour 05</option>
+            <option value="06">Hour 06</option>
+            <option value="07">Hour 07</option>
+        </select>
+    </div>
 
+    <button class="google-btn" onclick="handleGoogleLogin()">
+        <svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Sign in with Google
+    </button>
+</div>
+
+<script>
+    // 1. Convert first.last@hlcsk12.net to "Last, First"
+    function parseStudentName(email) {
+        if (!email) return 'Unknown';
+        if (email.endsWith('@hlcsk12.net')) {
+            let localPart = email.split('@')[0];
+            if (localPart.includes('.')) {
+                let parts = localPart.split('.');
+                let first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+                let last = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+                return `${last}, ${first}`;
+            }
+        }
+        return email.split('@')[0]; 
+    }
+
+    // 2. Your original day-of-the-week routing logic
     function redirectForDay(user, hour) {
-      const dayNum = (new Date()).getDay();
-      const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "exponents"];
-      const target = (dayNum >= 1 && dayNum <= 5) ? "index.html" : "points.html";
-      let url = `${target}?lastname=${encodeURIComponent(user)}&hour=${hour}`;
-      if (dayNum >= 1 && dayNum <= 5) url += `&game=${gameTypeArray[dayNum - 1]}`;
-      window.location.href = url;
+        const dayNum = (new Date()).getDay();
+        const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "roots"];
+        const target = (dayNum >= 1 && dayNum <= 5) ? "index.html" : "points.html";
+        let url = `${target}?lastname=${encodeURIComponent(user)}&hour=${hour}`;
+        if (dayNum >= 1 && dayNum <= 5) url += `&game=${gameTypeArray[dayNum - 1]}`;
+        window.location.href = url;
     }
 
-    function loginUser(name, hour) {
-      localStorage.setItem('mathgame_lastname', name);
-      localStorage.setItem('mathgame_hour', hour);
-      redirectForDay(name, hour);
-    }
+    window.onload = async () => {
+        // A. Catch bounce-back from Google
+        if (window.location.hash.includes('access_token')) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                const savedHour = localStorage.getItem('pending_mathgame_hour') || document.getElementById('hour-select').value;
+                const parsedName = parseStudentName(session.user.email);
 
-    document.getElementById("login-btn").onclick = async function() {
-      const rawInput = document.getElementById("lastname").value.trim();
-      const hour = document.getElementById("hour").value;
-      const errBox = document.getElementById("login-error");
-      errBox.textContent = '';
+                // Save identically to the old login method so universal.js doesn't break
+                localStorage.setItem('mathgame_lastname', parsedName);
+                localStorage.setItem('mathgame_hour', savedHour);
 
-      if (!rawInput || !hour) {
-        errBox.textContent = "Enter your name/nickname and select an hour.";
-        return;
-      }
-
-      // 1. Force Title Case for the first search (e.g., "grencz" -> "Grencz")
-      const titleCaseName = rawInput.charAt(0).toUpperCase() + rawInput.slice(1).toLowerCase();
-      
-      // 2. SEARCH 1: Check for Title Case (Trigger for nickname prompt)
-      const { data: titleCheck } = await supabase
-          .from('scores')
-          .select('lastname')
-          .eq('lastname', titleCaseName)
-          .eq('hour', hour);
-
-      if (titleCheck && titleCheck.length > 0) {
-          const newNickname = prompt(`Welcome, ${titleCaseName}! Please create a nickname (3+ letters, lowercase, no real names):`);
-          
-          if (!newNickname || newNickname.trim().length < 3) {
-              alert("Nickname too short! Try again.");
-              return;
-          }
-
-          const cleanNick = newNickname.trim().toLowerCase();
-
-          // Update all records for this student to their new nickname
-          const { error: updateErr } = await supabase
-              .from('scores')
-              .update({ lastname: cleanNick })
-              .eq('lastname', titleCaseName)
-              .eq('hour', hour);
-
-          if (!updateErr) {
-              loginUser(cleanNick, hour);
-          } else {
-              errBox.textContent = "Error saving nickname.";
-          }
-          return; 
-      }
-
-      // 3. SEARCH 2: Check for Lowercase (Standard login for existing nicknames)
-      const { data: nickCheck } = await supabase
-          .from('scores')
-          .select('lastname')
-          .eq('lastname', rawInput.toLowerCase())
-          .eq('hour', hour);
-
-      if (nickCheck && nickCheck.length > 0) {
-          loginUser(rawInput.toLowerCase(), hour);
-      } else {
-          errBox.textContent = "Name not found. Use your Last Name (Capitalized) for your first login.";
-      }
+                redirectForDay(parsedName, savedHour);
+                return;
+            }
+        }
+        
+        // B. Update button if already logged in (Cached Session)
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            const btn = document.querySelector('.google-btn');
+            btn.innerHTML = '🚀 Start Daily Game (Already Logged In)';
+            btn.style.backgroundColor = '#dcfce7';
+            btn.style.borderColor = '#22c55e';
+            btn.style.color = '#166534';
+        }
     };
 
-    // ENTER KEY SUPPORT
-    document.getElementById("lastname").addEventListener('keydown', (e) => {
-      if (e.key === "Enter") document.getElementById("hour").focus();
-    });
-    document.getElementById("hour").addEventListener('keydown', (e) => {
-      if (e.key === "Enter") document.getElementById("login-btn").click();
-    });
-  </script>
+    async function handleGoogleLogin() {
+        const hour = document.getElementById('hour-select').value;
+        
+        const { data: { session } } = await supabaseClient.auth.getSession();
+
+        if (session) {
+            // Already logged in, instantly route them
+            const parsedName = parseStudentName(session.user.email);
+            localStorage.setItem('mathgame_lastname', parsedName);
+            localStorage.setItem('mathgame_hour', hour);
+            redirectForDay(parsedName, hour);
+        } else {
+            // Not logged in, save hour and go to Google
+            localStorage.setItem('pending_mathgame_hour', hour);
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.href }
+            });
+
+            if (error) {
+                console.error("Auth error:", error);
+                alert("Could not connect to Google. Please try again.");
+            }
+        }
+    }
+</script>
+
 </body>
 </html>
