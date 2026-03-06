@@ -10,169 +10,146 @@ const gameTypes = ["addition", "subtraction", "multiplication", "division", "exp
 const scopeTypes = ["class", "overall"];
 
 let currentLevel = 1; 
+let cachedAllData = []; // Stores the full database locally for instant tab switching
 
-// This ensures the script waits for the HTML to be ready
 document.addEventListener('DOMContentLoaded', () => {
     initPage();
 });
 
+// --- 1. INFINITE PAGINATION HELPER ---
+// Bypasses the 1,000 row limit by fetching chunks until the database is empty
+async function fetchAllScores() {
+    let allData = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+        const { data, error } = await supabase
+            .from('scores')
+            .select('lastname, hour, score, points, game_type, created_at')
+            .neq('lastname', null)
+            .range(from, from + step - 1);
+        
+        if (error) {
+            console.error("Error fetching scores:", error);
+            break;
+        }
+        
+        if (data && data.length > 0) {
+            allData = allData.concat(data);
+            from += step;
+            if (data.length < step) hasMore = false; // Reached the end
+        } else {
+            hasMore = false;
+        }
+    }
+    return allData;
+}
+
 async function initPage() {
-    await showUserInfo();
-    await renderLeaderboard('addition', 'class');
+    document.getElementById('user-info').innerHTML = "<h3 style='color:#64748b; margin:0;'>Downloading live data...</h3>";
+    document.getElementById('leaderboard-content').innerHTML = "<p style='text-align:center; color:#64748b;'>Syncing global leaderboards...</p>";
+
+    // Fetch EVERYTHING once at boot
+    cachedAllData = await fetchAllScores();
+
+    showUserInfo();
+    renderLeaderboard('addition', 'class');
     setupRedemption();
 }
 
-// --- 1. USER STATS & BALANCE ---
-async function showUserInfo() {
-    const userInfoDiv = document.getElementById('user-info');
-    if (!userInfoDiv) return;
+// --- 2. USER STATS & BALANCE ---
+function showUserInfo() {
+    const myData = cachedAllData.filter(r => r.lastname === lastname && r.hour === hour);
+    const totalPoints = myData.reduce((acc, row) => acc + (row.points || 0), 0);
 
-    // Fetch everything for this user
-    const { data, error } = await supabase
-        .from('scores')
-        .select('*')
-        .eq('lastname', lastname)
-        .eq('hour', hour);
-
-    if (error) {
-        userInfoDiv.innerHTML = "<p>Error connecting to database.</p>";
-        return;
-    }
-
-    const points = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
-    
-    // Update balance display in the redeem box
-    const msgBox = document.getElementById('redeem-message');
-    if (msgBox) msgBox.innerHTML = `Balance: <strong>${points}</strong>`;
-
-    let html = `<h2 style="font-family: inherit;">Welcome ${lastname} (Hour ${hour})</h2>
-    <table class="leaderboard-table" style="width:100%; border-collapse: collapse;">
-        <thead>
-            <tr>
-                <th style="text-align:left; padding: 8px;">Mode</th>
-                <th>Level 1</th>
-                <th>Level 2</th>
-            </tr>
-        </thead>
-        <tbody>`;
-
-    gameTypes.forEach(gt => {
-        const best1 = Math.max(...(data.filter(r => r.game_type === gt).map(r => r.score || 0)), 0);
-        const best2 = Math.max(...(data.filter(r => r.game_type === gt + "_lvl2").map(r => r.score || 0)), 0);
-
-        html += `<tr>
-            <td style="text-align:left; text-transform:capitalize; padding: 8px;">${gt}</td>
-            <td style="text-align:center;">${best1}</td>
-            <td style="text-align:center; color:#d9534f;">${best2}</td>
-        </tr>`;
-    });
-
-    html += `</tbody></table>`;
-    userInfoDiv.innerHTML = html;
+    let html = `<h2>Welcome, ${lastname} (Hour ${hour})</h2>`;
+    html += `<div style="font-size:1.2em; color:#03793A; font-weight:bold; margin-bottom:10px;">Available Points: ${totalPoints}</div>`;
+    document.getElementById('user-info').innerHTML = html;
 }
 
-// --- 2. LEADERBOARD ---
-async function renderLeaderboard(gameType, scope) {
+// --- 3. LEADERBOARDS ---
+function renderLeaderboard(gameType, scope) {
+    const menuDiv = document.getElementById('menu-bar');
+    menuDiv.innerHTML = gameTypes.map(gt => 
+        `<button class="${gt === gameType ? 'active' : ''}" onclick="window.changeGame('${gt}', '${scope}')">${gt.charAt(0).toUpperCase() + gt.slice(1)}</button>`
+    ).join('');
+    menuDiv.innerHTML += `<button class="${gameType === 'overall' ? 'active' : ''}" onclick="window.changeGame('overall', '${scope}')">Overall Points</button>`;
+
+    const subMenuDiv = document.getElementById('submenu-bar');
+    subMenuDiv.innerHTML = scopeTypes.map(st => 
+        `<button class="${st === scope ? 'active' : ''}" onclick="window.changeGame('${gameType}', '${st}')">${st.charAt(0).toUpperCase() + st.slice(1)}</button>`
+    ).join('');
+
     const contentDiv = document.getElementById('leaderboard-content');
-    const menuBar = document.getElementById('menu-bar');
-    const submenuBar = document.getElementById('submenu-bar');
-    if (!contentDiv) return;
-
-    const version = "v1.04-glow"; 
     
-    // 1. Build Game Menu (Glows Green when active)
-    menuBar.innerHTML = '';
-    gameTypes.forEach(g => {
-        const isActive = (g === gameType);
-        const btn = document.createElement('button');
-        btn.className = isActive ? 'active' : '';
-        btn.textContent = g.charAt(0).toUpperCase() + g.slice(1);
-        
-        // Match the green glow style
-        btn.style.color = isActive ? 'white' : '#03793A';
-        btn.style.background = isActive ? '#03793A' : 'transparent';
-        btn.style.border = '1px solid #03793A';
-        btn.style.cursor = 'pointer';
-        
-        btn.onclick = () => renderLeaderboard(g, scope);
-        menuBar.appendChild(btn);
-    });
+    // Memory filtering makes tab switching instant
+    let filteredData = cachedAllData;
+    if (scope === 'class') {
+        filteredData = filteredData.filter(r => r.hour === hour);
+    }
 
-    // 2. Build Scope Menu (Glows Green when active)
-    submenuBar.innerHTML = '';
-    scopeTypes.forEach(s => {
-        const isActive = (s === scope);
-        const btn = document.createElement('button');
-        btn.className = isActive ? 'active' : '';
-        btn.textContent = (s === "class" ? `Hour ${hour}` : 'Overall');
-        
-        // Match the green glow style
-        btn.style.color = isActive ? 'white' : '#03793A';
-        btn.style.background = isActive ? '#03793A' : 'transparent';
-        btn.style.border = '1px solid #03793A';
-        btn.style.cursor = 'pointer';
-        btn.style.marginRight = '5px';
+    let tableHtml = "";
 
-        btn.onclick = () => renderLeaderboard(gameType, s);
-        submenuBar.appendChild(btn);
-    });
-
-    // 3. Create Toggle HTML (Level 1 is Green, Level 2 is Red)
-    const levelToggleHtml = `
-        <div style="text-align:right; margin-bottom:10px;">
-            <span style="font-size: 0.7em; color: #888; margin-right: 15px;">${version}</span>
-            <span style="font-weight:bold; margin-right:10px; font-size: 0.9em;">Difficulty:</span>
-            <button id="set-lvl1" 
-                style="color:${currentLevel === 1 ? 'white' : '#03793A'}; background:${currentLevel === 1 ? '#03793A' : 'transparent'}; border: 1px solid #03793A; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
-                Level 1
-            </button>
-            <button id="set-lvl2" 
-                style="color:${currentLevel === 2 ? 'white' : '#d9534f'}; background:${currentLevel === 2 ? '#d9534f' : 'transparent'}; border: 1px solid #d9534f; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
-                Level 2
-            </button>
-        </div>`;
-
-    contentDiv.innerHTML = levelToggleHtml + "<p style='padding:10px;'>Loading Leaderboard...</p>";
-
-    // Attach Level Toggle Listeners
-    document.getElementById('set-lvl1').onclick = () => { if(currentLevel!==1){ currentLevel=1; renderLeaderboard(gameType, scope); }};
-    document.getElementById('set-lvl2').onclick = () => { if(currentLevel!==2){ currentLevel=2; renderLeaderboard(gameType, scope); }};
-
-    // 4. Data Fetch
-    const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
-    let qb = supabase.from('scores').select('lastname, hour, score').eq('game_type', dbType);
-    if (scope === "class") qb = qb.eq('hour', hour);
-
-    const { data } = await qb;
-    
-    // 5. Render Table
-    let tableHtml = levelToggleHtml;
-    if (!data || data.length === 0) {
-        tableHtml += `<p style="padding: 20px;">No scores for Level ${currentLevel} yet!</p>`;
-    } else {
-        const users = {};
-        data.forEach(row => {
-            const key = row.lastname + "/" + row.hour;
-            if (!users[key] || row.score > users[key].score) users[key] = row;
+    if (gameType === 'overall') {
+        const pointsMap = {};
+        filteredData.forEach(r => {
+            if (!r.lastname) return;
+            pointsMap[r.lastname] = (pointsMap[r.lastname] || 0) + (r.points || 0);
         });
-        const agg = Object.values(users).sort((a, b) => b.score - a.score);
+
+        const sorted = Object.entries(pointsMap)
+            .map(([name, pts]) => ({ lastname: name, points: pts }))
+            .sort((a, b) => b.points - a.points);
+
+        tableHtml = `
+        <h3>Overall Points Leaderboard (${scope})</h3>
+        <table class="leaderboard-table">
+            <tr><th>Rank</th><th>Name</th><th>Total Points</th></tr>
+            ${sorted.map((r, i) => `
+            <tr${r.lastname === lastname ? ' style="background:#05B25A22"' : ''}>
+                <td>${i + 1}</td><td>${r.lastname}</td><td>${r.points}</td>
+            </tr>`).join('')}
+        </table>`;
+    } else {
+        const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
+        const gameData = filteredData.filter(r => r.game_type === dbType && r.score > 0);
         
-        tableHtml += `<table class="leaderboard-table" style="width:100%">
-            <tr><th>Name</th><th>Hour</th><th>Score</th></tr>
-            ${agg.map(r => `<tr${r.lastname == lastname && r.hour == hour ? ' style="background:#05B25A22"' : ''}>
-                <td>${r.lastname}</td><td>${r.hour}</td><td>${r.score}</td>
+        const bestScores = {};
+        gameData.forEach(r => {
+            if (!r.lastname) return;
+            if (!bestScores[r.lastname] || r.score > bestScores[r.lastname].score) {
+                bestScores[r.lastname] = r;
+            }
+        });
+
+        const sorted = Object.values(bestScores).sort((a, b) => b.score - a.score);
+
+        tableHtml = `
+        <h3>${gameType.charAt(0).toUpperCase() + gameType.slice(1)} Leaderboard (${scope})</h3>
+        <div style="text-align:center; margin-bottom:10px;">
+            <button id="set-lvl1" class="${currentLevel === 1 ? 'active' : ''}" style="padding:5px 15px; margin-right:5px; cursor:pointer;">Level 1</button>
+            <button id="set-lvl2" class="${currentLevel === 2 ? 'active' : ''}" style="padding:5px 15px; cursor:pointer;">Level 2</button>
+        </div>
+        <table class="leaderboard-table">
+            <tr><th>Rank</th><th>Name</th><th>Score</th></tr>
+            ${sorted.map((r, i) => `
+            <tr${r.lastname === lastname ? ' style="background:#05B25A22"' : ''}>
+                <td>${i + 1}</td><td>${r.lastname}</td><td>${r.score}</td>
             </tr>`).join('')}
         </table>`;
     }
     
     contentDiv.innerHTML = tableHtml;
 
-    // Final re-attach for the buttons because innerHTML was reset
-    document.getElementById('set-lvl1').onclick = () => { if(currentLevel!==1){ currentLevel=1; renderLeaderboard(gameType, scope); }};
-    document.getElementById('set-lvl2').onclick = () => { if(currentLevel!==2){ currentLevel=2; renderLeaderboard(gameType, scope); }};
+    if (document.getElementById('set-lvl1')) {
+        document.getElementById('set-lvl1').onclick = () => { if(currentLevel!==1){ currentLevel=1; renderLeaderboard(gameType, scope); }};
+        document.getElementById('set-lvl2').onclick = () => { if(currentLevel!==2){ currentLevel=2; renderLeaderboard(gameType, scope); }};
+    }
 }
 
-// --- 3. REDEMPTION ---
+// --- 4. REDEMPTION ---
 function setupRedemption() {
     const btn = document.getElementById('redeem-btn');
     if (!btn) return;
@@ -180,19 +157,31 @@ function setupRedemption() {
         const val = parseInt(document.getElementById('redeem-amount').value);
         if (isNaN(val) || val < 1) return;
 
-        const { data } = await supabase.from('scores').select('points').eq('lastname', lastname).eq('hour', hour);
-        const total = data ? data.reduce((acc, row) => acc + (row.points || 0), 0) : 0;
+        const myData = cachedAllData.filter(r => r.lastname === lastname && r.hour === hour);
+        const total = myData.reduce((acc, row) => acc + (row.points || 0), 0);
 
         if (val > total) {
             alert("Not enough points!");
             return;
         }
 
-        await supabase.from('scores').insert([{ lastname, hour, game_type: 'redeem', points: -val, score: 0 }]);
-        showUserInfo();
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        const { error } = await supabase.from('scores').insert([{ lastname, hour, game_type: 'redeem', points: -val, score: 0 }]);
+        
+        if (!error) {
+            document.getElementById('redeem-message').innerHTML = "<span style='color:green; font-weight:bold;'>Points redeemed successfully! Refreshing...</span>";
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            document.getElementById('redeem-message').innerHTML = "<span style='color:red'>Error redeeming points.</span>";
+            btn.disabled = false;
+            btn.innerText = "Redeem";
+        }
     };
 }
 
-// --- GLOBAL HELPERS (Required for onclick in modules) ---
-window.dispatchLeaderboard = (g, s) => renderLeaderboard(g, s);
-window.changeLevel = (l, g, s) => { currentLevel = l; renderLeaderboard(g, s); };
+// --- GLOBAL HELPERS ---
+window.changeGame = function(newGame, newScope) {
+    renderLeaderboard(newGame, newScope);
+};
