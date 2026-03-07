@@ -1,41 +1,41 @@
 import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
 
 const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-// Your public anon key is safely restored here!
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const lastname = localStorage.getItem('mathgame_lastname') || "";
-const hour = localStorage.getItem('mathgame_hour') || "";
-const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents", "roots"];
+// Aggressively hunt for the user ID across both Bellringer and Module storage
+const urlParams = new URLSearchParams(window.location.search);
+const lastname = urlParams.get('lastname') || sessionStorage.getItem('target_user') || localStorage.getItem('mathgame_lastname') || "";
+const hour = urlParams.get('hour') || sessionStorage.getItem('target_hour') || localStorage.getItem('mathgame_hour') || "00";
 
+const gameTypes = ["addition", "subtraction", "multiplication", "division", "exponents", "roots"];
 let currentLevel = 1; 
 let cachedAllData = []; 
 
 document.addEventListener('DOMContentLoaded', () => { initPage(); });
 
-// --- CONSISTENT ANONYMOUS ALIAS GENERATOR ---
-const adjectives = ["Acute", "Obtuse", "Right", "Radical", "Rational", "Prime", "Even", "Odd", "Fractional", "Decimal", "Linear", "Quadratic", "Absolute", "Infinite", "Parallel", "Perpendicular", "Symmetric", "Equilateral", "Isosceles", "Scalene", "Similar", "Congruent", "Positive", "Negative", "Variable", "Constant", "Algebraic", "Geometric"];
-const nouns = ["Axolotl", "Badger", "Cheetah", "Dolphin", "Eagle", "Falcon", "Giraffe", "Hippo", "Iguana", "Jaguar", "Kangaroo", "Llama", "Monkey", "Newt", "Ostrich", "Penguin", "Quail", "Raccoon", "Sloth", "Tiger", "Unicorn", "Vulture", "Walrus", "Xerus", "Yak", "Zebra", "Rhino", "Panda"];
+// --- SMART ALIAS GENERATOR ---
+const adjectives = ["Acute", "Obtuse", "Right", "Radical", "Rational", "Prime", "Even", "Odd", "Linear", "Quadratic", "Absolute", "Infinite", "Parallel", "Similar", "Congruent", "Positive", "Negative"];
+const nouns = ["Axolotl", "Badger", "Cheetah", "Dolphin", "Falcon", "Giraffe", "Iguana", "Jaguar", "Kangaroo", "Ostrich", "Penguin", "Raccoon", "Tiger", "Walrus", "Zebra", "Rhino", "Panda"];
 
 function getAnonymousAlias(rawString) {
     if (!rawString) return "Mystery Player";
     
-    // Turn their hidden ID string into a consistent number
-    let hash = 0;
-    for (let i = 0; i < rawString.length; i++) {
-        const char = rawString.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
+    // If it's a legacy nickname (no dashes, no @, standard length), don't change it
+    if (!rawString.includes('-') && !rawString.includes('@') && rawString.length < 25) {
+        return rawString.charAt(0).toUpperCase() + rawString.slice(1);
     }
     
-    hash = Math.abs(hash); // Ensure it's positive
+    // Otherwise, it's an SSO UUID. Hash it.
+    let hash = 0;
+    for (let i = 0; i < rawString.length; i++) {
+        hash = ((hash << 5) - hash) + rawString.charCodeAt(i);
+        hash = hash & hash; 
+    }
+    hash = Math.abs(hash);
 
-    // Pick a consistent adjective and noun based on their hash
-    const adjIndex = hash % adjectives.length;
-    const nounIndex = (hash >> 3) % nouns.length; 
-
-    return `${adjectives[adjIndex]} ${nouns[nounIndex]}`;
+    return `${adjectives[hash % adjectives.length]} ${nouns[(hash >> 3) % nouns.length]}`;
 }
 
 // Bypasses 1000 row limit
@@ -64,20 +64,34 @@ async function initPage() {
     setupRedemption();
 }
 
-// --- USER INFO & PERSONAL BESTS ---
+// --- USER INFO, PBS, AND RANKS ---
 function showUserInfo() {
     const myData = cachedAllData.filter(r => r.lastname === lastname && r.hour === hour);
     const totalPoints = myData.reduce((acc, row) => acc + (row.points || 0), 0);
     
-    const pbs = { addition: 0, subtraction: 0, multiplication: 0, division: 0, exponents: 0, roots: 0 };
+    const pbs = { addition: {score:0, rank:'-'}, subtraction: {score:0, rank:'-'}, multiplication: {score:0, rank:'-'}, division: {score:0, rank:'-'}, exponents: {score:0, rank:'-'}, roots: {score:0, rank:'-'} };
+    
+    // 1. Get Personal Bests
     myData.forEach(r => {
         const baseGame = r.game_type.replace('_lvl2', '');
-        if (pbs[baseGame] !== undefined && r.score > pbs[baseGame]) pbs[baseGame] = r.score;
+        if (pbs[baseGame] !== undefined && r.score > pbs[baseGame].score) pbs[baseGame].score = r.score;
+    });
+
+    // 2. Calculate Global Rank for each PB
+    gameTypes.forEach(gt => {
+        const gameData = cachedAllData.filter(r => r.game_type === gt && r.score > 0);
+        const bestScores = {};
+        gameData.forEach(r => {
+            if (!bestScores[r.lastname] || r.score > bestScores[r.lastname]) bestScores[r.lastname] = r.score;
+        });
+        const sorted = Object.entries(bestScores).sort((a, b) => b[1] - a[1]);
+        const myRankIndex = sorted.findIndex(x => x[0] === lastname);
+        if (myRankIndex !== -1 && pbs[gt].score > 0) pbs[gt].rank = `#${myRankIndex + 1}`;
     });
 
     let pbHtml = `<div class="pb-grid">`;
     gameTypes.forEach(gt => {
-        pbHtml += `<div class="pb-item"><div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; font-weight:bold;">${gt}</div><div class="pb-val">${pbs[gt]}</div></div>`;
+        pbHtml += `<div class="pb-item"><div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; font-weight:bold;">${gt}</div><div class="pb-val">${pbs[gt].score}</div><div style="font-size:0.8rem; color:#3b82f6; font-weight:bold; margin-top:3px;">Rank: ${pbs[gt].rank}</div></div>`;
     });
     pbHtml += `</div>`;
 
@@ -124,7 +138,7 @@ function renderLeaderboard(gameType, scope) {
         </div>
         <table class="leaderboard-table">
             <tr><th>Rank</th><th>Secret Identity</th><th>Total Points</th></tr>
-            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${getAnonymousAlias(r.lastname)}</td><td style="color:#10b981; font-weight:bold;">${r.points} pts</td></tr>`).join('')}
+            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3; border-left: 4px solid #f59e0b;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${getAnonymousAlias(r.lastname)}</td><td style="color:#10b981; font-weight:bold;">${r.points} pts</td></tr>`).join('')}
         </table>`;
     } else {
         const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
@@ -153,7 +167,7 @@ function renderLeaderboard(gameType, scope) {
         </div>
         <table class="leaderboard-table">
             <tr><th>Rank</th><th>Secret Identity</th><th>Best Score</th></tr>
-            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${getAnonymousAlias(r.lastname)}</td><td style="color:#3b82f6; font-weight:bold; font-size:1.1rem;">${r.score}</td></tr>`).join('')}
+            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3; border-left: 4px solid #f59e0b;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${getAnonymousAlias(r.lastname)}</td><td style="color:#3b82f6; font-weight:bold; font-size:1.1rem;">${r.score}</td></tr>`).join('')}
         </table>`;
     }
     
