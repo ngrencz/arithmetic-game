@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
 
 const SUPABASE_URL = "https://khazeoycsjdqnmwodncw.supabase.co";
-// 🚨 Ensure your key is here
+// Your public anon key is safely restored here!
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -14,33 +14,28 @@ let cachedAllData = [];
 
 document.addEventListener('DOMContentLoaded', () => { initPage(); });
 
-// Format Google SSO Names (e.g. "Smith, John" -> "John S.")
-function formatLeaderboardName(rawName) {
-    if (!rawName) return "Unknown";
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}/i.test(rawName)) return "Secure Scholar"; // Fallback for raw UUIDs
+// --- CONSISTENT ANONYMOUS ALIAS GENERATOR ---
+const adjectives = ["Acute", "Obtuse", "Right", "Radical", "Rational", "Prime", "Even", "Odd", "Fractional", "Decimal", "Linear", "Quadratic", "Absolute", "Infinite", "Parallel", "Perpendicular", "Symmetric", "Equilateral", "Isosceles", "Scalene", "Similar", "Congruent", "Positive", "Negative", "Variable", "Constant", "Algebraic", "Geometric"];
+const nouns = ["Axolotl", "Badger", "Cheetah", "Dolphin", "Eagle", "Falcon", "Giraffe", "Hippo", "Iguana", "Jaguar", "Kangaroo", "Llama", "Monkey", "Newt", "Ostrich", "Penguin", "Quail", "Raccoon", "Sloth", "Tiger", "Unicorn", "Vulture", "Walrus", "Xerus", "Yak", "Zebra", "Rhino", "Panda"];
+
+function getAnonymousAlias(rawString) {
+    if (!rawString) return "Mystery Player";
     
-    // If Email: john.doe@... -> John D.
-    if (rawName.includes('@')) {
-        let localPart = rawName.split('@')[0];
-        if (localPart.includes('.')) {
-            let parts = localPart.split('.');
-            let first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-            let lastInitial = parts[1].charAt(0).toUpperCase();
-            return `${first} ${lastInitial}.`;
-        }
-        return localPart;
+    // Turn their hidden ID string into a consistent number
+    let hash = 0;
+    for (let i = 0; i < rawString.length; i++) {
+        const char = rawString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
     }
+    
+    hash = Math.abs(hash); // Ensure it's positive
 
-    // If Parsed: "Smith, John" -> John S.
-    if (rawName.includes(',')) {
-        let parts = rawName.split(',');
-        let last = parts[0].trim();
-        let first = parts[1].trim();
-        return `${first} ${last.charAt(0).toUpperCase()}.`;
-    }
+    // Pick a consistent adjective and noun based on their hash
+    const adjIndex = hash % adjectives.length;
+    const nounIndex = (hash >> 3) % nouns.length; 
 
-    // Default Legacy Fallback
-    return rawName.charAt(0).toUpperCase() + rawName.slice(1);
+    return `${adjectives[adjIndex]} ${nouns[nounIndex]}`;
 }
 
 // Bypasses 1000 row limit
@@ -74,7 +69,6 @@ function showUserInfo() {
     const myData = cachedAllData.filter(r => r.lastname === lastname && r.hour === hour);
     const totalPoints = myData.reduce((acc, row) => acc + (row.points || 0), 0);
     
-    // Calculate PBs
     const pbs = { addition: 0, subtraction: 0, multiplication: 0, division: 0, exponents: 0, roots: 0 };
     myData.forEach(r => {
         const baseGame = r.game_type.replace('_lvl2', '');
@@ -89,7 +83,7 @@ function showUserInfo() {
 
     document.getElementById('user-info').innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="margin:0; color:#1e293b; font-size:1.5rem;">Welcome, ${formatLeaderboardName(lastname)} <span style="font-size:1rem; color:#94a3b8;">(Hour ${hour})</span></h2>
+            <h2 style="margin:0; color:#1e293b; font-size:1.5rem;">Welcome, ${getAnonymousAlias(lastname)} <span style="font-size:1rem; color:#94a3b8;">(That's you!)</span></h2>
             <div style="font-size:1.2rem; font-weight:bold; color:#10b981; background:#dcfce7; padding:8px 15px; border-radius:20px; border:1px solid #22c55e;">Wallet: ${totalPoints} pts</div>
         </div>
         <h4 style="margin: 25px 0 0 0; color:#334155; border-bottom: 2px solid #f1f5f9; padding-bottom:5px;">Your Personal Bests</h4>
@@ -129,8 +123,8 @@ function renderLeaderboard(gameType, scope) {
             </div>
         </div>
         <table class="leaderboard-table">
-            <tr><th>Rank</th><th>Student Name</th><th>Total Points</th></tr>
-            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${formatLeaderboardName(r.lastname)}</td><td style="color:#10b981; font-weight:bold;">${r.points} pts</td></tr>`).join('')}
+            <tr><th>Rank</th><th>Secret Identity</th><th>Total Points</th></tr>
+            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${getAnonymousAlias(r.lastname)}</td><td style="color:#10b981; font-weight:bold;">${r.points} pts</td></tr>`).join('')}
         </table>`;
     } else {
         const dbType = currentLevel === 2 ? `${gameType}_lvl2` : gameType;
@@ -158,8 +152,8 @@ function renderLeaderboard(gameType, scope) {
             </div>
         </div>
         <table class="leaderboard-table">
-            <tr><th>Rank</th><th>Student Name</th><th>Best Score</th></tr>
-            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${formatLeaderboardName(r.lastname)}</td><td style="color:#3b82f6; font-weight:bold; font-size:1.1rem;">${r.score}</td></tr>`).join('')}
+            <tr><th>Rank</th><th>Secret Identity</th><th>Best Score</th></tr>
+            ${sorted.map((r, i) => `<tr${r.lastname === lastname ? ' style="background:#fef9c3;"' : ''}><td><strong style="color:#94a3b8;">#${i + 1}</strong></td><td style="font-weight:bold; color:#334155;">${getAnonymousAlias(r.lastname)}</td><td style="color:#3b82f6; font-weight:bold; font-size:1.1rem;">${r.score}</td></tr>`).join('')}
         </table>`;
     }
     
