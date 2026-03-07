@@ -22,12 +22,12 @@ const nouns = ["Axolotl", "Badger", "Cheetah", "Dolphin", "Falcon", "Giraffe", "
 function getAnonymousAlias(rawString) {
     if (!rawString) return "Mystery Player";
     
-    // If it's a legacy nickname (no dashes, no @, standard length), don't change it
-    if (!rawString.includes('-') && !rawString.includes('@') && rawString.length < 25) {
+    // STRICT FILTER: Only allow single-word nicknames (no spaces, no dashes, no @)
+    if (!rawString.includes('-') && !rawString.includes('@') && !rawString.includes(' ') && rawString.length < 15) {
         return rawString.charAt(0).toUpperCase() + rawString.slice(1);
     }
     
-    // Otherwise, it's an SSO UUID. Hash it.
+    // If it's a UUID, an Email, OR a leaked Full Name, hash it securely!
     let hash = 0;
     for (let i = 0; i < rawString.length; i++) {
         hash = ((hash << 5) - hash) + rawString.charCodeAt(i);
