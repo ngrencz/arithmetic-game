@@ -95,22 +95,7 @@
 </div>
 
 <script>
-    // 1. Convert first.last@hlcsk12.net to "Last, First"
-    function parseStudentName(email) {
-        if (!email) return 'Unknown';
-        if (email.endsWith('@hlcsk12.net')) {
-            let localPart = email.split('@')[0];
-            if (localPart.includes('.')) {
-                let parts = localPart.split('.');
-                let first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-                let last = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-                return `${last}, ${first}`;
-            }
-        }
-        return email.split('@')[0]; 
-    }
-
-    // 2. Your original day-of-the-week routing logic
+    // Your original day-of-the-week routing logic
     function redirectForDay(user, hour) {
         const dayNum = (new Date()).getDay();
         const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "roots"];
@@ -128,13 +113,14 @@
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 const savedHour = localStorage.getItem('pending_mathgame_hour') || document.getElementById('hour-select').value;
-                const parsedName = parseStudentName(session.user.email);
+                
+                // THE FIX: Securely extract the anonymous UUID instead of the email
+                const secureUUID = session.user.id;
 
-                // Save identically to the old login method so universal.js doesn't break
-                localStorage.setItem('mathgame_lastname', parsedName);
+                localStorage.setItem('mathgame_lastname', secureUUID);
                 localStorage.setItem('mathgame_hour', savedHour);
 
-                redirectForDay(parsedName, savedHour);
+                redirectForDay(secureUUID, savedHour);
                 return;
             }
         }
@@ -156,11 +142,11 @@
         const { data: { session } } = await supabaseClient.auth.getSession();
 
         if (session) {
-            // Already logged in, instantly route them
-            const parsedName = parseStudentName(session.user.email);
-            localStorage.setItem('mathgame_lastname', parsedName);
+            // Already logged in, instantly route them using their UUID
+            const secureUUID = session.user.id;
+            localStorage.setItem('mathgame_lastname', secureUUID);
             localStorage.setItem('mathgame_hour', hour);
-            redirectForDay(parsedName, hour);
+            redirectForDay(secureUUID, hour);
         } else {
             // Not logged in, save hour and go to Google
             localStorage.setItem('pending_mathgame_hour', hour);
