@@ -2,31 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Speed Game</title>
+  <title>Speed Game | Bellringer</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="game">
-  <span class="left"></span>
-  <span class="correct">Score: 0</span>
 
-  <div class="banner">
-    <div id="level-select" style="text-align: center; padding: 20px;">
-      <h2>Select Difficulty</h2>
-      <button class="level-btn" data-level="1">Level 1</button>
-      <button class="level-btn" data-level="2">Level 2</button>
-    </div>
-    <div class="start" style="display: none;">
-      <span class="problem">0 + 0</span> =
-      <input class="answer" autocomplete="off">
-    </div>
-
-    <div class="end" style="display: none;">
-      <p class="correct">Score: 0</p>
-      <p><a href="" id="try-again">Try again</a></p>
-    </div>
+  <div id="header">
+      <div class="header-left">
+          <span id="user-display" class="stats-pill">Guest</span> 
+          <span id="lesson-display" class="lesson-pill">Daily Bellringer</span>
+      </div>
+      <div class="header-right">
+          <span class="timer-label">Time Remaining:</span>
+          <span class="seconds timer-value" style="color: #ef4444;">0</span>
+      </div>
   </div>
-</div>
+
+  <main class="container">
+      <div id="work-area" class="card">
+          <div class="question-header">
+              <h2 id="q-title">Speed Math Practice</h2>
+              <div class="correct-badge">Score: <span class="correct-val">0</span></div>
+          </div>
+
+          <div id="game" class="q-content">
+              <div class="banner">
+                  <div id="level-select" style="text-align: center; padding: 20px;">
+                      <p style="color: #64748b; margin-bottom: 20px;">Select your difficulty to begin the timer.</p>
+                      <button class="level-btn primary-btn" data-level="1">Level 1 (Standard)</button>
+                      <button class="level-btn secondary-btn" data-level="2">Level 2 (Challenge)</button>
+                  </div>
+
+                  <div class="start" style="display: none; text-align: center; padding: 30px 0;">
+                      <div style="font-family: 'Courier New', monospace; font-size: 3rem; margin-bottom: 20px; color: #1e293b; font-weight: bold;">
+                          <span class="problem">0 + 0</span> =
+                      </div>
+                      <input class="answer math-input" autocomplete="off" placeholder="?" type="number">
+                  </div>
+
+                  <div class="end" style="display: none; text-align: center; padding: 20px;">
+                      <div style="font-size: 50px; margin-bottom: 10px;">⏱️</div>
+                      <h2 style="color: #1e293b; margin: 0 0 10px 0;">Time's Up!</h2>
+                      <p class="correct" style="font-size: 1.2rem; font-weight: bold; color: #22c55e;">Score: 0</p>
+                      <p style="margin-top: 20px;"><a href="" id="try-again" class="primary-btn" style="text-decoration: none; display: inline-block;">Play Again</a></p>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </main>
+
   <script type="module">
     import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2.38.5";
     window.supabase = { createClient };
@@ -36,5 +60,15 @@
   <script src="https://ngrencz.github.io/arithmetic-game/sandbox_agent.js"></script>
   
   <script type="module" src="universal.js"></script>
+
+  <script>
+      document.addEventListener('DOMContentLoaded', () => {
+          const user = localStorage.getItem('mathgame_lastname');
+          const hour = localStorage.getItem('mathgame_hour');
+          if (user) {
+              document.getElementById('user-display').innerText = `${user} (Hour ${hour})`;
+          }
+      });
+  </script>
 </body>
 </html>
