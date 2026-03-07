@@ -231,16 +231,16 @@
         problemGeng();
 
         answer.on('input', function (e) {
-            try {
-                if (e.currentTarget.value.trim() === String(genned.answer)) {
-                    correct_ct++;
-                    $('.correct').first().text('Score: ' + correct_ct);
-                    problemGeng();
-                }
-            } catch(err) {
-                console.error("Input processing error:", err);
+        try {
+            if (e.currentTarget.value.trim() === String(genned.answer)) {
+                correct_ct++;
+                $('.correct').first().text('Score: ' + correct_ct);
+                problemGeng();
             }
-        });
+        } catch(err) {
+            console.error("Input processing error:", err);
+        }
+    });
 
         const timer = setInterval(function () {
             try {
