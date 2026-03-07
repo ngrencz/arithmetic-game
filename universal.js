@@ -84,11 +84,18 @@
         }
     }
 
-    async function submitScoreToSupabase(user, hr, targetGameType, score, points) {
-        try {
-            await supabase.from('scores').insert([{ lastname: user, hour: hr, game_type: targetGameType, score: score, points: points }]);
-        } catch(e) {
-            console.error("DB Submit Score Error:", e);
+    async function submitScoreToSupabase(lastname, hour, gameType, score, points) {
+    const { error } = await supabase.from('scores').insert([{ 
+        lastname: lastname, 
+        hour: hour, 
+        game_type: gameType, 
+        score: score, 
+        points: points 
+    }]);
+    
+    if (error) {
+        alert("Supabase Error: " + error.message);
+        console.error(error);
         }
     }
 
