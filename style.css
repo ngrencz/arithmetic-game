@@ -1,284 +1,118 @@
+:root {
+    --primary: #1e293b;
+    --secondary: #3b82f6;
+    --success: #10b981;
+    --danger: #ef4444;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #334155;
+    --text-muted: #64748b;
+    --gray-light: #e2e8f0;
+}
+
 body {
-  min-height: 100vh;
-  margin: 0;
-  background: #05B25A;
-  /* You can use flex-column if you want horizontal center: */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    margin: 0;
+    background-color: var(--bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-main);
 }
 
-#user-info {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 4px 16px #05B25A22;
-  width: 90vw;
-  max-width: 600px;
-  margin: 2em auto 0 auto;
-  padding: 1.4em 1em;
-  text-align: left;
-  font-size: 1.22em;
-}
-#user-info ul {
-  margin-left: 1.3em;     /* standard indent for bullets (default) */
-  padding-left: 0;        /* or try padding-left: 1.3em if margin doesn't work */
-  text-align: left;       /* make bullets follow the left edge */
+/* Modern Header */
+#header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--primary);
+    color: white;
+    padding: 15px 30px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-#user-info li {
-  text-align: left;
+.stats-pill {
+    background: #334155;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
 }
-#user-info h2 {
+
+.lesson-pill {
+    background: var(--secondary);
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.timer-label { color: #94a3b8; font-size: 0.9rem; font-weight: bold; margin-right: 10px; }
+.timer-value { font-family: monospace; font-size: 1.2rem; font-weight: bold; background: white; padding: 4px 10px; border-radius: 6px; }
+
+/* Main Container */
+.container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+}
+
+/* The "Card" Look */
+.card {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid var(--gray-light);
+    overflow: hidden;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 15px 25px;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.question-header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+
+.correct-badge {
+    background: #dcfce7;
+    color: #166534;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    border: 1px solid var(--success);
+}
+
+/* Buttons */
+button { cursor: pointer; transition: 0.2s; border: none; font-weight: bold; }
+.primary-btn { background: var(--secondary); color: white; padding: 12px 24px; border-radius: 8px; font-size: 1rem; }
+.primary-btn:hover { background: #2563eb; transform: translateY(-2px); }
+
+.secondary-btn { background: #8b5cf6; color: white; padding: 12px 24px; border-radius: 8px; font-size: 1rem; margin-left: 10px; }
+.secondary-btn:hover { background: #7c3aed; transform: translateY(-2px); }
+
+/* Math Input */
+.math-input {
+    width: 120px;
+    padding: 15px;
+    font-size: 2rem;
     text-align: center;
-}
-#login-box {
-  background: #fff;
-  border-radius: 22px;
-  box-shadow: 0 8px 32px 0 #05B25A88;
-  padding: 2em;
-  max-width: 350px;
-  width: 90vw;
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 1.2em;
-}
-
-#login-box input,
-#login-box select {
-  font-size: 1.1em;
-  margin: 0.5em 0;
-  padding: 0.4em;
-  border-radius: 10px;
-  border: 2px solid #05B25A;
-  width: 80%;
-  box-shadow: 0 6px 16px #2221;
-}
-.card-box {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 4px 16px #05B25A22;
-  max-width: 600px;
-  width: 90vw;
-  margin: 2em auto 0 auto;
-  padding: 1.4em 1em;
-  text-align: center;
-}
-
-/* Title gets its own bubble at the top */
-.page-title.card-box {
-  font-size: 2em;
-  font-weight: bold;
-  color: #03793A;
-  margin-top: 2.2em;
-}
-
-#redeem-box.card-box {
-  padding: 1.3em 1em;
-  font-size: 1.16em;
-}
-
-#leaderboard-window.card-box {
-  padding: 1.2em 1em;
-  font-size: 1.16em;
-}
-
-/* Table in leaderboard bubble */
-#leaderboard-window table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1em 0;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px #05B25A18;
-  overflow: hidden;
-}
-
-#leaderboard-window th, #leaderboard-window td {
-  border: 2px solid #05B25A;
-  background: #fff;
-  padding: 10px 14px;
-  font-size: 1.07em;
-  color: #222;
-}
-
-#leaderboard-window th {
-  background: #e6e6e6;
-  font-weight: bold;
-}
-
-#leaderboard-window tbody tr:nth-child(even) td {
-  background: #f7fff7;
-}
-#login-box button {
-  font-size: 1.1em;
-  background: #05B25A;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0.5em 2em;
-  margin-top: 1em;
-  cursor: pointer;
-}
-
-#login-error {
-  color: #c00;
-  margin: 0.5em 0;
-  font-size: 0.97em;
-  min-height: 1.2em;
-  text-align: center;
-}
-#game {
-  background: #fff;
-  padding: 3em;
-  width: 90vw;
-  max-width: 500px;  
-  border-radius: 22px;
-  margin: auto;
-  border-radius: 15px;
-  border: 3px solid #000;      /* Thick, bold border */
-  background: linear-gradient(135deg, #fff 70%, #d9efdb 100%);
-  /* Pronounced deep shadow for a "raised" effect */
-  box-shadow:
-    0 6px 18px 2px #2229,      /* deep main shadow */
-    0 1.5px 0 #fff8 inset;     /* slight inner top highlight */
-  outline: none;
-  transition: box-shadow 0.2s, border-color 0.2s;
-  font-size: 1.5em;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-#leaderboard-window {
-  background: #fff;
-  padding: 1em;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px #05B25A33;
-  margin-top: 2em;
-  width:90vw;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-  /* Ensure child items don't overflow visually */
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.menu-bar {
-  justify-content: center;
-  align-items:center;
-  text-align: center;
-  margin: 0 0 0.7em 0;
-  border-bottom: 1px solid #eee;
-  padding: 0.6em 0;
-  font-size: 1em;
-  background: #f7fff7;
-  border-radius: 8px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.4em;
-}
-.menu-bar button {
-  border: none;
-  border-radius: 8px;
-  padding: 0.5em 1.2em;
-  font-size: 1em;
-  cursor: pointer;
-  white-space: nowrap;
-  color: #fff;
-  background: #03793A; 
-  transition: background 0.2s, outline 0.2s;
-}
-.level-btn {
-    padding: 10px 20px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    margin: 5px;
+    border: 3px solid #cbd5e1;
     border-radius: 8px;
-    border: 2px solid #333;
-    background-color: #f0f0f0;
-    transition: transform 0.1s;
+    outline: none;
+    color: var(--primary);
+    font-family: monospace;
+    font-weight: bold;
 }
+.math-input:focus { border-color: var(--secondary); }
 
-.level-btn:hover {
-    background-color: #e0e0e0;
-}
-
-.level-btn:active {
-    transform: scale(0.95);
-}
-.menu-bar button.active {
-  background: #05B25A;   
-  outline: 2px solid #03A850;
-  color: #000;
-}
-#redeem-box {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px #05B25A22;
-  width: 90vw;
-  max-width: 600px;
-  margin: 2em auto;
-  padding: 1.3em 1em;
-  text-align: center;
-  font-size: 1.16em;
-}
-#redeem-box h3 { margin-top: 0; }
-
-.redeem-caption {
-  color: #888;
-  margin-top: 0.8em;
-  text-align: center;
-  font-size: 1em;
-  opacity: 0.8;
-  font-style: italic; /* optional, makes it look like a comment */
-}
-.problem {
-  font-size: 1.5em;
-  margin: 0 0.3em;
-}
-.banner { margin-top: 2em; }
-input.answer {
-  width: 90px;
-  font-size: 1.5em;
-  text-align: center;
-  padding: 0.7em 0.3em;
-  border-radius: 15px;
-  border: 3px solid #fff;      
-}
-.left, .correct { margin-right: 1em; font-size: 1.2em; }
-.end { text-align: center; }
-
-#leaderboard-window table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1em 0;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px #05B25A15;
-  overflow: hidden;
-}
-
-#leaderboard-window th,
-#leaderboard-window td {
-  border: 2px solid #05B25A;
-  background: #fff;
-  padding: 10px 14px;
-  font-size: 1.07em;
-  color: #222;
-}
-
-#leaderboard-window th {
-  background: #e6e6e6;
-  font-weight: bold;
-}
-
-#leaderboard-window tbody tr:nth-child(even) td {
-  background: #f7fff7;
-}
-#leaderboard-window table,
-#leaderboard-window th,
-#leaderboard-window td {
-  font-size: 0.97em; /* or smaller as you prefer, e.g. 0.92em */
-}
+/* Hide the old UI text injected by universal.js */
+.left { display: none; }
