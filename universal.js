@@ -194,6 +194,10 @@ function init(options) {
         problemStartTime = Date.now();
         problem.text(genned.prettyProblem);
         answer.val('');
+        
+        // Tell the Sandbox what the answer is
+        window.expectedTestAnswer = current.a;
+        
     }
 
     let correct_ct = 0;
