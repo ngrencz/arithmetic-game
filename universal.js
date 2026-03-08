@@ -241,7 +241,13 @@
         try {
             if (e.currentTarget.value.trim() === String(genned.answer)) {
                 correct_ct++;
-                $('.correct').first().text('Score: ' + correct_ct);
+                
+                // Updates the hidden endgame screen
+                $('.correct').first().text('Score: ' + correct_ct); 
+                
+                // THE FIX: Updates the live scoreboard at the top of the screen!
+                $('.correct-val').text(correct_ct); 
+                
                 problemGeng();
             }
         } catch(err) {
