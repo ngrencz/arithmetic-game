@@ -227,7 +227,7 @@
                 answer.val('');
                 
                 // 🟢 TELL THE SANDBOX THE ANSWER
-                window.expectedTestAnswer = genned.answer;
+                // window.expectedTestAnswer = genned.answer;
             } catch (e) {
                 console.error("Problem Generation Error:", e);
             }
