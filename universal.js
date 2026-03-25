@@ -1,6 +1,6 @@
 /**
  * universal.js - Bellringer Speed Game (HARDENED & SANDBOX READY)
- * Features: IIFE Closure, Try/Catch Safety Nets, Sandbox API Hook
+ * Features: Absolute Timer, Anti-Idle, Tab-Switch Penalty, 50% Best Score Minimum
  */
 
 (function() {
@@ -9,6 +9,14 @@
     // 🚨 Paste your actual key below before deploying:
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoYXplb3ljc2pkcW5td29kbmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MDMwOTMsImV4cCI6MjA3ODQ3OTA5M30.h-WabaGcQZ968sO2ImetccUaRihRFmO2mUKCdPiAbEI";
     const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
+    // --- Anti-Cheat: Tab Switching ---
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            alert("⚠️ Focus Lost! You left the tab or minimized the browser. Your game has been reset.");
+            window.location.reload(); 
+        }
+    });
 
     // --- 2. State Variables ---
     const params = new URLSearchParams(window.location.search);
@@ -33,15 +41,7 @@
         case "division": options.div = true; break;
         case "exponents": options.exp = true; break;
     }
-// --- Anti-Cheat: Tab Switching ---
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            // The moment they leave the tab, alert them and reload the page
-            alert("⚠️ Focus Lost! You left the tab or minimized the browser. Your game has been reset.");
-            window.location.reload(); 
-        }
-    });
-    
+
     // --- 3. Initialization ---
     $(document).ready(function() {
         $('.level-btn').on('click', function() {
@@ -146,7 +146,7 @@
                         <span class="game-userinfo">
                             ${currentUser} (${currentHour}) | Lvl: ${selectedLevel} | Best: ${bestScore} | Points: ${points}
                         </span><br><br>
-                        <span class="game-seconds">Seconds left: <span class="seconds">0</span></span>
+                        <span class="game-seconds">Time left: <span class="seconds">3:00</span></span>
                     `);
                     initGameEngine(options);
                 })
@@ -160,11 +160,19 @@
     // --- 6. Main Game Engine ---
     function initGameEngine(opts) {
         let problemStartTime;
+        let lastInputTime = Date.now(); // NEW: Tracks the last time they typed something
+
         const game = $('#game');
         const problem = game.find('.problem');
         const answer = game.find('.answer');
         const banner = game.find('.banner');
         const correct = game.find('.correct');
+        
+        // NEW: Inject the Idle Warning Div dynamically
+        if ($('#idle-warning').length === 0) {
+            $('.question-header').after('<div id="idle-warning" style="display: none; background: #ef4444; color: white; padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px;"></div>');
+        }
+
         answer.focus();
 
         function pg_add() {
@@ -237,28 +245,31 @@
                 problem.text(genned.prettyProblem);
                 answer.val('');
                 
-                // 🟢 TELL THE SANDBOX THE ANSWER
-                // window.expectedTestAnswer = genned.answer;
+                // 🟢 AUTO-PILOT CHEAT REMOVED!
             } catch (e) {
                 console.error("Problem Generation Error:", e);
             }
         }
 
         let correct_ct = 0;
-        const startTime = Date.now();
+        
+        // NEW: Absolute timer calculation
+        const gameDurationMs = opts.duration * 1000;
+        const endTime = Date.now() + gameDurationMs;
+
         problemGeng();
 
+        // 🟢 THIS IS THE INPUT CHECKER
         answer.on('input', function (e) {
         try {
+            // NEW: Reset the idle tracker because they typed something
+            lastInputTime = Date.now(); 
+            $('#idle-warning').hide();  
+
             if (e.currentTarget.value.trim() === String(genned.answer)) {
                 correct_ct++;
-                
-                // Updates the hidden endgame screen
                 $('.correct').first().text('Score: ' + correct_ct); 
-                
-                // THE FIX: Updates the live scoreboard at the top of the screen!
                 $('.correct-val').text(correct_ct); 
-                
                 problemGeng();
             }
         } catch(err) {
@@ -268,16 +279,45 @@
 
         const timer = setInterval(function () {
             try {
-                const d = opts.duration - Math.floor((Date.now() - startTime) / 1000);
-                $('.seconds').text(Math.max(0, d));
-                
-                if (d <= 0) {
+                // --- NEW: IDLE CHECK ---
+                const idleTimeMs = Date.now() - lastInputTime;
+                if (idleTimeMs >= 25000) {
                     clearInterval(timer);
+                    alert("⏳ You were idle for too long! The game is restarting.");
+                    window.location.reload();
+                    return;
+                } else if (idleTimeMs >= 15000) {
+                    const secondsUntilReset = Math.ceil((25000 - idleTimeMs) / 1000);
+                    $('#idle-warning').show().text(`⚠️ Wake up! Game restarts in ${secondsUntilReset} seconds!`);
+                }
+                // --- END IDLE CHECK ---
+
+                // Calculate real time remaining
+                const timeRemainingMs = endTime - Date.now();
+                const secondsLeft = Math.ceil(timeRemainingMs / 1000);
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(timer);
+                    $('.seconds').text("0:00");
                     answer.prop('disabled', true);
+                    $('#idle-warning').hide();
                     
                     const dbType = selectedLevel === 2 ? `${gameType}_lvl2` : gameType;
                     
                     fetchBestScore(currentUser, currentHour, dbType).then(best => {
+                        
+                        // --- NEW: 50% Accountability Check ---
+                        // Only punish them if their best score is decent (> 10) and they scored less than half
+                        if (best > 10 && correct_ct < (best * 0.5)) {
+                            banner.find('.start').hide();
+                            banner.find('.end').show().find('.correct').html(
+                                `Score: ${correct_ct}<br><span style="color: #ef4444; font-size: 0.85em;">Score too low to count! You must get at least 50% of your personal best (${Math.ceil(best * 0.5)}).</span>`
+                            );
+                            setTimeout(() => { window.location.reload(); }, 4500);
+                            return; // Stop the database submission entirely
+                        }
+                        // --- END Accountability Check ---
+
                         const res = updateScoreAndPoints(correct_ct, best);
                         
                         submitScoreToSupabase(currentUser, currentHour, dbType, correct_ct, res.sessionPoints)
@@ -292,6 +332,12 @@
                         console.error("Endgame DB Resolution Error:", err);
                         setTimeout(() => { window.location.href = 'points.html'; }, 2000);
                     });
+                } else {
+                    // Convert total seconds into MM:SS format
+                    const minutes = Math.floor(secondsLeft / 60);
+                    let seconds = secondsLeft % 60;
+                    if (seconds < 10) seconds = "0" + seconds;
+                    $('.seconds').text(`${minutes}:${seconds}`);
                 }
             } catch (err) {
                 console.error("Timer Loop Crash:", err);
