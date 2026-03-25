@@ -33,7 +33,15 @@
         case "division": options.div = true; break;
         case "exponents": options.exp = true; break;
     }
-
+// --- Anti-Cheat: Tab Switching ---
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            // The moment they leave the tab, alert them and reload the page
+            alert("⚠️ Focus Lost! You left the tab or minimized the browser. Your game has been reset.");
+            window.location.reload(); 
+        }
+    });
+    
     // --- 3. Initialization ---
     $(document).ready(function() {
         $('.level-btn').on('click', function() {
