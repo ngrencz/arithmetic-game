@@ -113,6 +113,16 @@ button { cursor: pointer; transition: 0.2s; border: none; font-weight: bold; }
     font-weight: bold;
 }
 .math-input:focus { border-color: var(--secondary); }
+/* Hide spinners for Chrome, Safari, Edge, and Opera */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
+/* Hide spinners for Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
 /* Hide the old UI text injected by universal.js */
 .left { display: none; }
