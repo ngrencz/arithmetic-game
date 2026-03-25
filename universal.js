@@ -37,6 +37,9 @@
     // --- 3. Initialization ---
     $(document).ready(function() {
         $('.level-btn').on('click', function() {
+            // FIX: Disable the buttons immediately so they can't be spam-clicked
+            $('.level-btn').prop('disabled', true); 
+            
             selectedLevel = parseInt($(this).data('level')); 
             
             if (selectedLevel === 2) {
