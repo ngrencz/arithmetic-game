@@ -95,7 +95,6 @@
 </div>
 
 <script>
-    // Your original day-of-the-week routing logic
     function redirectForDay(user, hour) {
         const dayNum = (new Date()).getDay();
         const gameTypeArray = ["addition", "subtraction", "multiplication", "division", "roots"];
@@ -105,22 +104,44 @@
         window.location.href = url;
     }
 
+    // NEW: Function to check database for previous hours before allowing entry
+    async function checkHourAndRedirect(secureUUID, selectedHour) {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        
+        // Look up the user's most recent score to see what hour they usually use
+        const { data, error } = await supabaseClient
+            .from('scores')
+            .select('hour')
+            .eq('lastname', secureUUID)
+            .neq('hour', selectedHour) // Look for ANY records that don't match the current selection
+            .limit(1);
+
+        if (data && data.length > 0) {
+            const previousHour = data[0].hour;
+            const override = confirm(
+                `⚠️ STOP!\n\nYou selected Hour ${selectedHour}, but you have previously logged scores under Hour ${previousHour}.\n\nIf this is a mistake, click CANCEL.\nIf this is your first time fixing your hour, you may click OK, but be warned: logging into the wrong hour means your scores will not count.`
+            );
+            
+            if (!override) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                return; // Stop the login process
+            }
+        }
+
+        // If they pass the check or override, save and redirect
+        localStorage.setItem('mathgame_lastname', secureUUID);
+        localStorage.setItem('mathgame_hour', selectedHour);
+        redirectForDay(secureUUID, selectedHour);
+    }
+
     window.onload = async () => {
         // A. Catch bounce-back from Google
         if (window.location.hash.includes('access_token')) {
-            document.getElementById('loading-overlay').style.display = 'flex';
-            
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 const savedHour = localStorage.getItem('pending_mathgame_hour') || document.getElementById('hour-select').value;
-                
-                // THE FIX: Securely extract the anonymous UUID instead of the email
                 const secureUUID = session.user.id;
-
-                localStorage.setItem('mathgame_lastname', secureUUID);
-                localStorage.setItem('mathgame_hour', savedHour);
-
-                redirectForDay(secureUUID, savedHour);
+                await checkHourAndRedirect(secureUUID, savedHour);
                 return;
             }
         }
@@ -138,15 +159,12 @@
 
     async function handleGoogleLogin() {
         const hour = document.getElementById('hour-select').value;
-        
         const { data: { session } } = await supabaseClient.auth.getSession();
 
         if (session) {
-            // Already logged in, instantly route them using their UUID
+            // Already logged in, run the check
             const secureUUID = session.user.id;
-            localStorage.setItem('mathgame_lastname', secureUUID);
-            localStorage.setItem('mathgame_hour', hour);
-            redirectForDay(secureUUID, hour);
+            await checkHourAndRedirect(secureUUID, hour);
         } else {
             // Not logged in, save hour and go to Google
             localStorage.setItem('pending_mathgame_hour', hour);
